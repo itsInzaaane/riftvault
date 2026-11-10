@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b2030" />
+  <meta name="description" content="A personal Riftbound collection inventory, continuous card scanner, experimental foil finish detection, and TXT-powered deck builder." />
+  <title>RiftVault — Riftbound Collection Manager</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="styles.css?v=1.13" />
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"><img src="icon-192.png" alt="RiftVault emblem" /></div><div><strong>RiftVault</strong><span>RIFTBOUND COLLECTION</span></div></div>
+    <div class="menu-title">WORKSPACE</div>
+    <nav id="side-nav" class="side-nav" aria-label="Main navigation"></nav>
+    <div class="side-bottom"><div class="connection"><span class="online-dot"></span><span id="catalog-status-side">Loading catalogue...</span></div><p>Unofficial, personal-use companion for Riftbound.</p></div>
+  </aside>
+  <div class="work-area">
+    <header class="topbar"><div class="header-left"><span class="topbar-kicker">MY COLLECTION / <span id="breadcrumb">OVERVIEW</span></span><h1 id="page-title">Overview</h1></div><div class="header-actions"><span id="catalog-badge" class="catalog-badge">Loading cards...</span><button class="avatar-btn" data-action="backup" title="Download a complete JSON backup" aria-label="Download backup">↧</button></div></header>
+    <main id="main" class="content" tabindex="-1"></main>
+    <footer class="footer">RiftVault • Local-first inventory. Your collection stays in this browser until you export it. • RiftVault was created under Riot Games' &quot;Legal Jibber Jabber&quot; policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.</footer>
+  </div>
+</div>
+<nav id="bottom-nav" class="bottom-nav" aria-label="Mobile navigation"></nav>
+<div id="modal-root"></div>
+<div id="toast-container" aria-live="polite"></div>
+<input type="file" id="restore-input" accept=".json,application/json" hidden />
+<script src="app.js?v=1.13" defer></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', function () { navigator.serviceWorker.register('./service-worker.js').catch(function(e){ console.warn('Offline cache unavailable',e); }); }); }</script>
+</body>
+</html>
