@@ -248,3 +248,75 @@ body{background:radial-gradient(ellipse at 80% 0%,#0e3144 0%,var(--bg) 38%,var(-
 .deck-assigned-printings .btn{white-space:normal;text-align:left;min-height:31px}
 @media(max-width:700px){.rune-count-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.rune-count-item{padding:10px}.rune-setup{padding:14px}.deck-assigned-printings{min-width:0}.deck-assigned-printings .btn{font-size:11px}}
 @media(max-width:355px){.rune-count-grid{grid-template-columns:1fr 1fr}.rune-count-item .rune-label{font-size:11px}}
+
+/* v1.15 — unified Inventory set browser, art-led decks and sort controls */
+.sort-toolbar{align-items:center;gap:10px}
+.sort-toolbar .search-wrap{flex:1 1 230px}
+.sort-control{display:flex;align-items:center;gap:9px;white-space:nowrap;min-width:190px;color:var(--muted);font-size:11px;font-weight:750}
+.sort-control .select{width:auto;min-width:195px;max-width:100%;border-color:#99734290;background:#182e40}
+.sort-control .select:focus-visible,.set-collection-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card-price-tag{margin-top:8px;color:var(--muted);font-size:10px;display:flex;flex-wrap:wrap;gap:3px}
+.card-price-tag strong{color:var(--accent2);font-size:11px}
+.card-price-label{color:var(--muted)}
+.inventory-lookup{margin-bottom:24px}
+.inventory-lookup .toolbar{margin-bottom:14px}
+.inventory-lookup .inventory-list{min-width:0}
+.set-collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.set-collection-tile{display:flex;flex-direction:column;background:#102638;border:1px solid #426078;border-radius:17px;padding:0;text-align:left;color:var(--text);overflow:hidden;min-width:0;transition:border-color .15s,transform .15s,box-shadow .15s}
+.set-collection-tile:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 12px 38px #0006}
+.set-brand-surface{min-height:162px;position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at center,#28475b,#0b1b2d 78%);padding:22px 16px}
+.set-brand-surface:before,.set-view-banner:before{content:"";position:absolute;inset:10px;border:1px solid #c4a16f45;border-radius:12px;pointer-events:none}
+.set-brand-surface:after{content:"✦";position:absolute;font-size:190px;line-height:1;color:#f6bd6120;right:-21px;top:-37px;pointer-events:none}
+.set-code-tag{position:absolute;right:13px;top:12px;color:#f2d4aa;font-size:10px;letter-spacing:1.6px;font-weight:900}
+.set-emblem{display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;z-index:1;gap:3px;color:#f7ce81;text-shadow:0 3px 12px #0009;max-width:100%;text-align:center}
+.set-emblem-sigil{font-size:26px;line-height:1;color:#e8ae57}
+.set-emblem-name{font-family:Georgia,Palatino,ui-serif,serif;font-variant:small-caps;font-weight:900;font-size:clamp(24px,2.6vw,33px);line-height:1.05;letter-spacing:2px;max-width:100%;overflow-wrap:anywhere}
+.set-emblem-line{display:block;width:65%;height:2px;background:linear-gradient(90deg,transparent,currentColor,transparent);margin-top:7px}
+.set-emblem-sfd .set-emblem-name{font-family:Impact,'Arial Narrow',sans-serif;font-weight:850;letter-spacing:1px;color:#e1d8b7;text-shadow:0 2px 0 #6c4d45,0 4px 13px #000}
+.set-emblem-unl .set-emblem-name{font-family:Impact,'Arial Narrow',sans-serif;color:#ff7774;letter-spacing:1px;transform:skew(-3deg);text-shadow:1px 2px 0 #922d31,0 3px 14px #000}
+.set-emblem-ven .set-emblem-name{font-style:italic;color:#b6efda;letter-spacing:1px;text-shadow:0 3px 0 #356b63,0 4px 15px #000}
+.set-emblem-rad .set-emblem-name{color:#b8d5ff;letter-spacing:2.5px;text-shadow:0 2px 0 #4d6496,0 4px 14px #000}
+.set-brand-surface:has(.set-emblem-sfd){background:radial-gradient(ellipse at 60% 0%,#425267,#1c2638 62%,#101723)}
+.set-brand-surface:has(.set-emblem-unl){background:radial-gradient(ellipse at 55% 10%,#683138,#261623 62%,#111724)}
+.set-brand-surface:has(.set-emblem-ven){background:radial-gradient(ellipse at 40% 10%,#31685d,#152e32 64%,#101b26)}
+.set-brand-surface:has(.set-emblem-rad){background:radial-gradient(ellipse at 55% 5%,#30537d,#152438 66%,#0a1a31)}
+.set-collection-info{padding:17px 16px 15px}
+.set-collection-info >.row-between strong{font-size:15px}
+.set-count{margin-top:10px;display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:740;color:#e8cc9f}
+.set-count span:last-child{color:var(--accent)}
+.set-collection-info .progress-track{margin:12px 0 0;height:6px}
+.set-view-banner{position:relative;overflow:hidden;border:1px solid #926f4896;border-radius:18px;min-height:165px;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:26px;margin:0 0 24px;background:radial-gradient(ellipse at 10% 0%,#2f5266,#0a2031 72%)}
+.set-view-banner .set-emblem{flex:1;min-width:0}
+.set-view-banner .set-emblem-name{font-size:clamp(25px,4vw,44px)}
+.set-banner-stats{z-index:1;display:flex;flex-direction:column;gap:5px;text-align:right;flex:0 0 auto}
+.set-banner-stats strong{font-size:18px;color:#f6d09a}
+.set-banner-stats span{color:#a7bcc8;font-size:11px}
+.set-theme-unl{background:linear-gradient(115deg,#4e262f,#151c2e)}
+.set-theme-ven{background:linear-gradient(115deg,#24524b,#111c29)}
+.set-theme-rad{background:linear-gradient(115deg,#264875,#0b1b30)}
+.set-theme-sfd{background:linear-gradient(115deg,#4b5262,#131d2e)}
+.collection-card{min-width:0;text-align:left}
+.collection-card .card-meta strong{min-height:32px;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* Exact Legend artwork crops into a landscape banner and overlays the deck title. */
+.deck-cover{height:155px;position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;margin-bottom:14px;background:linear-gradient(135deg,#244961,#3c2642);padding:18px}
+.deck-cover:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#060c19e8 1%,#060c19a0 33%,transparent 90%)}
+.deck-cover-art{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 27%;filter:saturate(1.17)}
+.deck-cover-fallback{display:grid;place-items:center;font-size:90px;color:#ffd58f55;background:radial-gradient(circle at 70% 20%,#966e3c55,transparent 62%)}
+.deck-cover>div:not(.deck-cover-art){position:relative;z-index:1}
+.deck-cover>.deck-symbol{display:none}
+.deck-cover strong{color:#fff5e5;text-shadow:0 2px 10px #0009;line-height:1.2}
+.deck-cover .eyebrow{color:#ffcb79;text-shadow:0 2px 8px #000}
+@media(max-width:700px){
+ .sort-toolbar{align-items:stretch}
+ .sort-toolbar .search-wrap{flex-basis:100%}
+ .sort-control{flex:1 1 180px;justify-content:space-between;min-width:0;gap:6px}
+ .sort-control .select{width:100%;min-width:0;max-width:none;flex:1}
+ .set-collection-grid{grid-template-columns:1fr;gap:12px}
+ .set-brand-surface{min-height:150px}
+ .set-emblem-name{font-size:31px}
+ .set-view-banner{min-height:135px;flex-direction:column;padding:25px 18px 14px;gap:14px}
+ .set-view-banner .set-emblem-name{font-size:31px}
+ .set-banner-stats{text-align:center;align-items:center}
+ .deck-cover{height:162px}
+}
+@media(max-width:370px){.sort-control{flex-basis:100%}.set-emblem-name{font-size:27px}.set-brand-surface{min-height:140px}}
