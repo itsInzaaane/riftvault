@@ -1,28 +1,33 @@
-# RiftVault v1.17 — Exact Printings & Card Zoom
+# RiftVault v1.18 — Set Artwork & Banned Cards
 
-Builds on v1.16 and preserves the same browser-storage data key and saved inventory/deck schemas.
+Built on the v1.17 Exact Printings & Card Zoom release. The original `riftvault-local-v1` inventory key and deck allocation schema remain unchanged.
 
-## New
+## New in v1.18
 
-1. **One Search result per printing.** Each unique catalogue printing ID is listed separately, including special/promotional and alternate-art variants. Card code, art, rarity, quantity and market price are shown for that printing only. Your existing sorting and set/owned filters remain, and collector number is the default sort for new users.
-2. **One-printing card detail.** Selecting a result's *text* opens only that specific printing, with its own Bulk/deck/storage locations, foil and normal counts, price estimates and Add to Bulk controls.
-3. **Tap to enlarge artwork.** Tap an image in Search, set browsing, the owned inventory, or an open deck. The enlarged view provides close and zoom controls and returns to your previous position. Deck thumbnails show the assigned physical printing if it has artwork.
-4. **Compact deck statistics on mobile.** Required, Assigned, Still Missing and Deck Sections now use smaller 2×2 tiles. Desktop metrics are unchanged.
+- **Real set logos:** Five user-provided transparent PNGs are included locally: Origins, Spiritforged, Unleashed, Vendetta and Radiance. Their artwork appears in Inventory set tiles and set headers. Other sets retain a styled-text fallback.
+- **Banned Cards:** Open via desktop sidebar **Banned cards**, mobile **More → Banned cards**, or **More → Rules Library → Banned Cards**. Filter the official snapshot between Standard Constructed (12 entries) and 2v2 Constructed (13 entries); search by name or collector number when metadata is available.
+- **Ban notices:** BANNED badges are shown on individual-printing Search Cards, set browsing, owned inventory, card details and deck entries. The only 2v2-only Legend, Master Yi, Wuju Bladesman, is identified separately. All printings with an identical card name share the same legality warning.
+- **Deck warning:** Existing Standard deck legality checks now use the same authoritative name matching as the Banned Cards page. An apostrophe or leading “The” should no longer suppress a warning. Bans do not delete or block casual collections.
+- All v1.17 changes are retained, including individual printings, card zoom, small mobile deck stats, searchable rules, scanning, finish tracking, deck editing, Rune allocation, daily TCGplayer pricing and Excel export.
 
-## Install on GitHub Pages
+## Official source and freshness
 
-1. Save a JSON backup from the existing app (**More → Settings & backup**) before updating.
-2. Upload all extracted files into the root of your existing `riftvault` repository (replace matching files); commit.
-3. Check GitHub Actions for successful Pages deployment. Close/reopen the installed mobile site; if necessary refresh the page normally. **Do not clear site data**, which would delete locally stored inventory.
-4. Search `Ahri` to see individual collector-number results; open Renata Glasc's deck and tap a card's thumbnail to enlarge it.
+Official Riot Games Rules Hub: https://playriftbound.com/en-us/rules-hub/
+Ban list snapshot last verified **11 November 2026**. Latest effective official ban change: **18 September 2026**. The app does **not** automatically refresh its ban list from Riot; consult the Rules Hub before tournament play.
 
-**Note:** Card artwork and market quotes rely on the online catalogue and the RiftHunt feed. Unavailable images show a placeholder; missing prices show N/A. The app is not affiliated with Riot Games.
+## Updating your existing GitHub Pages site
 
+1. **Back up your collection first:** Open RiftVault on your phone, go to **More → Settings & backup**, and download a JSON backup. A GitHub update should not delete local data, but browser storage is not a cloud backup.
+2. Download the v1.18 ZIP and unzip it on a computer.
+3. Open your existing GitHub repository `riftvault` and choose **Add file → Upload files**. Upload **the contents of the ZIP directly into the repository root** (not the ZIP itself and not an extra folder). Allow the existing files to be replaced.
+4. Commit changes, check Actions for a successful Pages deployment, then close and reopen the installed web app on your phone. If the old app persists, refresh without clearing browser site data.
 
-## Important notes
+GitHub Pages URL from earlier setup: https://itsinzaaane.github.io/riftvault/
 
-- Saved cards and decks use the same `riftvault-local-v1` storage key as v1.16. The new version does not intentionally reset data. Back up before updating.
-- RiftVault remains device-local and does not synchronize between phone and desktop automatically.
-- Card images and TCGplayer market quotes rely on live third-party catalogue feeds. No image or quote is shown as guaranteed if the provider is unavailable.
-- The Rules Library contains short explanations, not the full official rulebook; check the official source for current changes.
-- Camera OCR and foil recognition still need physical phone testing.
+## Limitations
+
+- Online card images and prices require catalogue/price access. Missing artwork and prices remain blank / N/A.
+- Bans are based on Riot's dated published list; no automatic ban list sync is claimed.
+- Browser-based inventory is device-local. Phone and desktop do not automatically sync.
+- Camera OCR and foil recognition are experimental and should be confirmed with physical scans.
+- Provided set logo images are fan-project assets; RiftVault is not endorsed by Riot Games.

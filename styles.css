@@ -439,3 +439,40 @@ body{background:radial-gradient(ellipse at 80% 0%,#0e3144 0%,var(--bg) 38%,var(-
 @media(max-width:360px){.deck-kpis .stat-card{padding:10px}.deck-kpis .stat-value{font-size:23px}}
 
 .art-preview-scroll.artwork-unavailable::after{content:"Artwork could not be loaded. Reconnect and refresh the card catalogue.";display:block;font-size:13px;color:var(--muted);text-align:center;padding:16px}
+
+
+/* v1.18 set logo artwork supplied by collector; size constrained in all views */
+.set-image-emblem{width:100%;max-width:490px;min-width:0;padding:1px 0;}
+.set-logo-asset{display:block;width:100%;max-width:405px;max-height:136px;object-fit:contain;filter:drop-shadow(0 9px 12px #0009);margin-inline:auto;}
+.set-logo-fallback{font-family:Georgia,serif;font-weight:900;text-align:center;font-size:clamp(26px,5vw,36px);color:#f1ca84;}
+.set-logo-fallback[hidden]{display:none}
+.set-view-banner .set-logo-asset{max-width:430px;max-height:144px}
+.set-brand-surface:has(.set-image-emblem):after{opacity:.45}
+@media(max-width:700px){.set-logo-asset{max-height:120px;max-width:305px}.set-view-banner .set-logo-asset{max-height:105px}}
+/* Banned card labels appear on a single exact printing, not the grouped card name. */
+.ban-badge{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;width:max-content;max-width:100%;font-size:10px;font-weight:850;letter-spacing:.45px;line-height:1.3;color:#ffd9dc;background:#6a1b2e;border:1px solid #eb6d7c95;border-radius:6px;padding:4px 8px;white-space:normal}
+.ban-badge-duo{background:#624020;color:#ffdeba;border-color:#ce8a4f}
+.card-meta .ban-badge,.inventory-main .ban-badge,.deck-entry-text .ban-badge{margin-top:6px;margin-bottom:3px}
+.ban-detail-alert{display:flex;flex-direction:column;align-items:flex-start;gap:6px;border-radius:11px;background:#59233050;border:1px solid #e45f7475;padding:11px;margin:0 0 15px}
+.ban-detail-alert span:last-child{color:#f5ccd2;font-size:12px;line-height:1.5}
+.ban-detail-alert a{color:#ffd9b4}
+.banned-view{max-width:1120px;margin:0 auto}
+.ban-hero{background:radial-gradient(circle at 90% 0%,#bb43552b,transparent 62%),linear-gradient(110deg,#221d2d,#0c2531)}
+.banned-link-row{margin:18px 0}
+.ban-list-panel{padding:22px!important}
+.ban-format-switch{display:inline-flex;gap:4px;padding:4px;background:#081c2a;border:1px solid #38546b;border-radius:12px}
+.ban-format-switch button{border:0;color:#b7c4d8;background:transparent;border-radius:8px;padding:10px 15px;font-size:13px;font-weight:800}
+.ban-format-switch button.selected{background:#be5362;color:white}
+.ban-result-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ban-row{min-width:0;display:flex;gap:12px;align-items:center;padding:12px;background:#112539;border:1px solid #385064;border-radius:12px}
+.ban-row[hidden]{display:none!important}
+.ban-card-art{width:58px;height:80px;flex:0 0 58px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid #455d72;border-radius:6px;background:#0d1d2f}
+.ban-card-art img{width:100%;height:100%;object-fit:cover}
+.ban-art-fallback{font-size:29px;color:#df6978}
+.ban-card-info{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}
+.ban-card-info strong{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.ban-card-info small{font-size:11px}
+.ban-row-tags{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.ban-row .btn{white-space:normal;font-size:10px;min-width:82px}
+@media(max-width:920px){.ban-result-list{grid-template-columns:1fr}}
+@media(max-width:560px){.ban-list-panel{padding:15px!important}.ban-row{gap:10px;padding:10px}.ban-card-art{width:50px;height:68px;flex-basis:50px}.ban-row .btn{font-size:10px;min-width:70px;padding:6px 8px}.ban-card-info strong{font-size:14px}}
