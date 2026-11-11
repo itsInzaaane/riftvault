@@ -1,6 +1,6 @@
 /* RiftVault v1.16: Offline app shell only. Inventory always remains in browser localStorage. */
-const CACHE = 'riftvault-shell-v1.18';
-const SHELL = ['./', './index.html', './app.js', './styles.css', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './set-origins.png', './set-spiritforged.png', './set-unleashed.png', './set-vendetta.png', './set-radiance.png'];
+const CACHE = 'riftvault-shell-v1.20';
+const SHELL = ['./', './index.html', './app.js', './styles.css', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './set-origins.png', './set-spiritforged.png', './set-unleashed.png', './set-vendetta.png', './set-radiance.png', './riftvault-blue-logo.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });

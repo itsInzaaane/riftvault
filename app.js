@@ -8,7 +8,7 @@ const RUNE_CATALOG_KEY = 'riftvault-rune-catalogue-v111';
 // Cache for complete RiftHunt printings, including the latest Radiance set.
 const RH_CATALOG_KEY = 'riftvault-rifthunt-catalogue-v113';
 const PRICE_QUOTES_URL = 'https://api.rifthunt.com/bulk/prices';
-const PRICE_CACHE_KEY = 'riftvault-price-feed-v16';
+const PRICE_CACHE_KEY = 'riftvault-price-feed-v120-signature';
 const PRICE_PREF_KEY = 'riftvault-market-preference-v13';
 const PRICE_CACHE_AGE = 24*60*60*1000;
 const SCAN_SPEED_KEY = 'riftvault-scan-speed-v15';
@@ -148,7 +148,7 @@ let nameIndex = new Map();
 let codeIndex = new Map();
 let state = loadState();
 let ui = {tab:'overview',query:'',ownedOnly:false,setFilter:'all',inventoryQuery:'',deckId:null,modal:null,importText:'',importName:'Jinx Deck',variantFinish:'Normal',addCardQuery:'',addCardQuantity:1,addCardSection:'MainDeck',selectedSet:'all'};
-let priceState = {status:'loading', fetchedAt:null, checkedAt:null, entries:[], byLegacy:new Map(), byCode:new Map(), error:'', market:'tcgplayer', cached:false};
+let priceState = {status:'loading', fetchedAt:null, checkedAt:null, entries:[], byLegacy:new Map(), byCode:new Map(), byPrinting:new Map(), error:'', market:'tcgplayer', cached:false};
 try { const pc=JSON.parse(localStorage.getItem(PRICE_CACHE_KEY));if(pc && Array.isArray(pc.entries) && pc.entries.length>200){priceState.entries=pc.entries;priceState.fetchedAt=pc.fetchedAt;priceState.checkedAt=pc.checkedAt||pc.fetchedAt;priceState.cached=true;priceState.status='ready';} }catch(e){}
 // The Recent Scans panel is for the current app visit, not the saved history.
 // Keep only activity IDs in RAM; scanned cards and full history remain in localStorage.
@@ -170,11 +170,18 @@ function scanThumbnail(activity){
  const meta=getMeta(unpackKey(activity.key).id);
  return `<span class="scan-thumb" aria-label="${escapeHtml(meta.name)} artwork">${cardArt(meta)}</span>`;
 }
-let scanner = {running:false,starting:false,stream:null,worker:null,video:null,loopToken:0,latchedCode:null,lastCandidate:null,stable:0,missed:0,sessionCount:0,finish:'Normal',finishMode:'auto',lastRecognized:'',busy:false,foilTimer:null,foilCode:null,foilSamples:[],pending:null,acceptedHash:null,speed:localStorage.getItem(SCAN_SPEED_KEY)==='steady'?'steady':'fast',ocrCycles:0,cropCanvas:null,hashCanvas:null,flashTimeout:null,lastSuccess:null};
+let scanner = {running:false,starting:false,deckNotice:false,stream:null,worker:null,video:null,loopToken:0,latchedCode:null,lastCandidate:null,stable:0,missed:0,sessionCount:0,finish:'Normal',finishMode:'auto',lastRecognized:'',busy:false,foilTimer:null,foilCode:null,foilSamples:[],pending:null,acceptedHash:null,speed:localStorage.getItem(SCAN_SPEED_KEY)==='steady'?'steady':'fast',ocrCycles:0,cropCanvas:null,hashCanvas:null,flashTimeout:null,lastSuccess:null};
 
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function normalizeName(str){return String(str||'').normalize('NFKD').toLowerCase().replace(/[’‘]/g,"'").replace(/[‐‑–—]/g,'-').replace(/\s+/g,' ').trim();}
-function normalizedCode(str){return String(str||'').toUpperCase().replace(/\/[0-9]+.*/,'').replace(/[^A-Z0-9]/g,'');}
+function normalizedCode(str){
+ // The star is meaningful: OGN-301* (Signature) is NOT OGN-301 (unsigned).
+ // Older API exports used an s suffix, which is an alias for Signature.
+ return String(str||'').toUpperCase().replace(/\/[0-9]+.*/,'').replace(/[^A-Z0-9*]/g,'')
+  .replace(/^([A-Z0-9]{2,5}[0-9]{3})S$/,'$1*');
+}
+function isSignaturePrinting(meta){return !!meta && (!!meta.isSignature || /\*$/.test(normalizedCode(meta.code||meta.publicCode||'')) || /signature/i.test(String(meta.rarity||'')));}
+function isOvernumberedPrinting(meta){return !!meta && (!!meta.isOvernumbered || /overnumbered/i.test(String(meta.rarity||'')) || isSignaturePrinting(meta));}
 function uid(){return (typeof crypto!=='undefined' && crypto.randomUUID)?crypto.randomUUID():'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
 function keyFor(cardId,finish){return String(cardId)+'~~'+(finish||'Normal');}
 function unpackKey(key){const pos=key.lastIndexOf('~~');return pos<0?{id:key,finish:'Normal'}:{id:key.slice(0,pos),finish:key.slice(pos+2)};}
@@ -268,7 +275,7 @@ function createMeta(raw){
   name:officialCardName(shortName,code,type),shortName,
   set:String(raw.set||raw.setCode||''),setName:String(raw.setName||raw.cardSet||''),
   rarity:String(raw.rarity||''),type,imageUrl:String(raw.imageUrl||''),isVariant:!!raw.isVariant,
-  isAltArt:!!raw.isAltArt||/^[A-Z0-9]{2,5}(?:[RST]?[0-9]{2,3})A$/.test(normalizedCode(code)),domains:Array.isArray(raw.domains)?raw.domains:[],
+  isAltArt:!!raw.isAltArt||/^[A-Z0-9]{2,5}(?:[RST]?[0-9]{2,3})A$/.test(normalizedCode(code)),isSignature:!!raw.isSignature||!!raw.sig||/\*$/.test(normalizedCode(code)),isOvernumbered:!!raw.isOvernumbered||!!raw.over,domains:Array.isArray(raw.domains)?raw.domains:[],
   supertype:String(raw.supertype||''),tags:Array.isArray(raw.tags)?raw.tags:[],
   printingId:String(raw.printingId||raw.printing_id||''),
   finishes:Array.isArray(raw.finishes)?raw.finishes:[]};
@@ -295,20 +302,20 @@ function rebuildIndexes(){
 // A suffix such as SFD-088a identifies a distinct physical printing, not a foil finish.
 function siblingPrintings(card){
  if(!card)return [];
- const m=String(card.code||'').match(/^([A-Z0-9]{2,5})-([RST]?\d{1,3})[A-Z]?$/i);
+ const m=String(card.code||'').match(/^([A-Z0-9]{2,5})-([RST]?\d{1,3})[A-Z*]?$/i);
  if(!m)return [card];
  const prefix=normalizedCode(m[1]),num=m[2].replace(/^([RST]?)0+(?=\d)/i,'$1').toUpperCase();
  return printingsFor(card.name).filter(p=>{
-  const cm=String(p.code||'').match(/^([A-Z0-9]{2,5})-([RST]?\d{1,3})[A-Z]?$/i);
+  const cm=String(p.code||'').match(/^([A-Z0-9]{2,5})-([RST]?\d{1,3})[A-Z*]?$/i);
   return cm&&normalizedCode(cm[1])===prefix&&cm[2].replace(/^([RST]?)0+(?=\d)/i,'$1').toUpperCase()===num;
  }).sort((a,b)=>Number(a.isAltArt)-Number(b.isAltArt)||a.code.localeCompare(b.code));
 }
-function printingFamilyCode(code){const c=normalizedCode(code);const m=c.match(/^([A-Z0-9]{2,5})([RST]?\d{2,3})[A-Z]?$/);return m?m[1]+m[2]:c;}
-function needsArtworkReview(card){return !!card&&!card.isAltArt&&!card.isVariant&&siblingPrintings(card).some(p=>p.isAltArt||p.isVariant);}
+function printingFamilyCode(code){const c=normalizedCode(code);const m=c.match(/^([A-Z0-9]{2,5})([RST]?\d{2,3})[A-Z*]?$/);return m?m[1]+m[2]:c;}
+function needsArtworkReview(card){return !!card&&!card.isAltArt&&!isSignaturePrinting(card)&&siblingPrintings(card).some(p=>p.isAltArt||isSignaturePrinting(p)||(!card.isVariant&&p.isVariant));}
 function isFoilOnlyAlternate(card){
  if(!card)return false;
  const collector=normalizedCode(card.code||card.publicCode||'');
- return !!card.isAltArt || /^[A-Z0-9]{2,5}(?:[RST]?[0-9]{2,3})A$/.test(collector);
+ return !!card.isAltArt || isSignaturePrinting(card) || /^[A-Z0-9]{2,5}(?:[RST]?[0-9]{2,3})A$/.test(collector);
 }
 function knownPrintingFinish(card){
  if(isFoilOnlyAlternate(card))return 'Foil';
@@ -316,7 +323,7 @@ function knownPrintingFinish(card){
  if(!row||!Array.isArray(row.allowedFinishes)||row.allowedFinishes.length!==1)return null;
  return row.allowedFinishes[0]==='foil'?'Foil':row.allowedFinishes[0]==='normal'?'Normal':null;
 }
-function printingLabel(card){return card.isAltArt?'Alternate Art':card.isVariant?'Special Printing':'Regular Art';}
+function printingLabel(card){return isSignaturePrinting(card)?'Signature Overnumbered':isOvernumberedPrinting(card)?'Overnumbered':card.isAltArt?'Alternate Art':card.isVariant?'Special Printing':'Regular Art';}
 function getMeta(id){return allPrintings.get(id)||state.printings[id]||{id,name:id,code:id,setName:'Unknown',rarity:'',type:'',imageUrl:''};}
 function printingsFor(name){return nameIndex.get(normalizeName(name))||[];}
 function isBasicRuneName(name){return RUNE_NAMES.some(r=>normalizeName(r)===normalizeName(name));}
@@ -419,7 +426,8 @@ function collectorFromRiftHunt(row){
  // Newer bulk exports use alt and sig flags, while their printed code may
  // omit the suffix. Never fold the two physical art variants together.
  if(row.alt&&!/a$/i.test(collector)&&!/^SP/i.test(collector))collector+='a';
- if(row.sig&&!/s$/i.test(collector)&&!/^SP/i.test(collector))collector+='s';
+ if(row.sig&&!/[s*]$/i.test(collector)&&!/^SP/i.test(collector))collector+='*';
+ if(row.sig&&/s$/i.test(collector)&&!/^SP/i.test(collector))collector=collector.slice(0,-1)+'*';
  return /^(?:[0-9]{3}|[RST][0-9]{2,3}|SP[0-9]{1,2})(?:[a-z*]|-SC)?$/i.test(collector)?collector:'';
 }
 function metaFromRiftHunt(row){
@@ -441,7 +449,7 @@ function metaFromRiftHunt(row){
   rarity:row.rarity||'',supertype:row.supertype||'',domains:row.domains||[],
   tags:row.tags||[],imageUrl:row.imgUrl||'',finishes:row.finishes,
   isAltArt:!!row.alt||/a$/i.test(collector),
-  isVariant:!!(row.alt||row.sig||row.over||/a$/i.test(collector)||/\(Metal\)/i.test(row.name||''))});
+  isVariant:!!(row.alt||row.sig||row.over||/a$/i.test(collector)||/\(Metal\)/i.test(row.name||'')),isSignature:!!row.sig||/\*$/.test(collector),isOvernumbered:!!row.over});
 }
 function integrateRiftHuntCatalogue(raw,{cache=true}={}){
  const rows=Array.isArray(raw)?raw:Array.isArray(raw?.cards)?raw.cards:[];
@@ -470,24 +478,30 @@ async function loadRuneCatalogue(){
    toast('Radiance cards need the online catalogue. Check your internet connection, then reopen RiftVault.',true);
  }
 }
-function indexPrices(){priceState.byLegacy=new Map();priceState.byCode=new Map();for(const c of priceState.entries){if(c.legacyId){const k=normalizedCode(c.legacyId);if(!priceState.byLegacy.has(k))priceState.byLegacy.set(k,[]);priceState.byLegacy.get(k).push(c);}if(c.code){const k=normalizedCode(c.code);if(!priceState.byCode.has(k))priceState.byCode.set(k,[]);priceState.byCode.get(k).push(c);}}}
+function indexPrices(){
+ priceState.byLegacy=new Map();priceState.byCode=new Map();priceState.byPrinting=new Map();
+ for(const record of priceState.entries){
+  if(record.printingId){priceState.byPrinting.set(record.printingId,record);}
+  for(const [map,value] of [[priceState.byLegacy,record.legacyId],[priceState.byCode,record.code]]){
+   const key=normalizedCode(value);if(!key)continue;
+   if(!map.has(key))map.set(key,[]);
+   map.get(key).push(record);
+  }
+ }
+}
 function priceRecord(meta){
  if(!meta||!priceState.entries.length)return null;
- const code=normalizedCode(meta.code),id=normalizedCode(meta.id);
- // Only match a specific physical printing; no fallback to regular art if
- // the alternate-art suffix is absent from the price catalogue.
- let candidates=code?(priceState.byCode.get(code)||[]):(priceState.byLegacy.get(id)||[]);
- if(meta.printingId){const exact=candidates.filter(c=>c.printingId===meta.printingId);if(exact.length)candidates=exact;}
- if(!candidates.length)return null;
- candidates=candidates.filter(c=>Boolean(c.alt)===Boolean(meta.isAltArt));
- if(meta.isVariant)candidates=candidates.filter(c=>c.isVariant);
- else candidates=candidates.filter(c=>!c.isVariant);
- const target=normalizeName(meta.name);
- const nameMatches=candidates.filter(c=>normalizeName(c.name)===target || normalizeName(c.cleanName)===target);
- if(nameMatches.length)candidates=nameMatches;
- // More than one price record with this printed collector code is ambiguous
- // (e.g. special promo variants). Refuse to assign a price silently.
- return candidates.length===1?candidates[0]:null;
+ // Authoritative source: immutable RiftHunt printing UUID. Never fall back to
+ // an unsigned sibling if this specific signed printing has no price.
+ if(meta.printingId)return priceState.byPrinting.get(meta.printingId)||null;
+ const code=normalizedCode(meta.code||meta.publicCode);
+ const candidates=(priceState.byCode.get(code)||[]).filter(row=>
+   isSignaturePrinting(row)===isSignaturePrinting(meta) &&
+   !!row.alt===!!meta.isAltArt &&
+   (!!row.isVariant===!!meta.isVariant || isOvernumberedPrinting(row)));
+ const matchingName=candidates.filter(row=>normalizeName(row.name)===normalizeName(meta.name)||normalizeName(row.cleanName)===normalizeName(meta.name));
+ const final=matchingName.length?matchingName:candidates;
+ return final.length===1?final[0]:null;
 }
 // Bilgewater Market does not offer a verified, browser-readable public price API.
 // The app records quotes that the user copies from Bilgewater. Never rebrand
@@ -510,6 +524,7 @@ function bilgewaterQuoteFor(meta,finish='Normal'){
 // Never interpret a foil-only card's null normal entry as a $0 price.
 function quoteFor(meta,finish='Normal'){
  const record=priceRecord(meta);
+ if(isSignaturePrinting(meta)&&finish!=='Foil')return null;
  if(!record)return null;
  const key=finish==='Foil'?'foil':'normal';
  if(Array.isArray(record.allowedFinishes)&&!record.allowedFinishes.includes(key))return null;
@@ -599,8 +614,8 @@ async function loadPrices(force=false){
     const printed=collectorFromRiftHunt({...c,collector:u?.collector||c.collector||''});
     const code=String(c.set).toUpperCase()+'-'+printed;
     return {printingId:c.printing_id,legacyId:c.riftboundId||'',code,
-      name:c.name,cleanName:c.cleanName||c.name,alt:!!c.alt||/a$/i.test(printed),
-      isVariant:!!(c.alt||c.sig||c.over||/[a-z]$/i.test(printed)||/\(Metal\)/i.test(c.name)),
+      name:c.name,cleanName:c.cleanName||c.name,alt:!!c.alt||/a$/i.test(printed),sig:!!c.sig||/\*$/.test(printed),over:!!c.over,
+      isVariant:!!(c.alt||c.sig||c.over||/[a-z*]$/i.test(printed)||/\(Metal\)/i.test(c.name)),
       allowedFinishes:c.finishes,domains:c.domains||[],supertype:c.supertype||'',
       type:c.type||'',tags:c.tags||[],set:c.set||'',rarity:c.rarity||'',
       usd:u?{normal:u.finishes?.normal||null,foil:u.finishes?.foil||null,
@@ -787,7 +802,7 @@ function correctPrintingOne(oldKey,newId,activityId=null){
  save();return true;
 }
 function showModal(type,extra={}){ui.modal={type,...extra};renderModal();}
-function closeModal(){ui.modal=null;renderModal();}
+function closeModal(){scanner.deckNotice=false;ui.modal=null;renderModal();}
 function requirementName(entry){const p=eligiblePrintings(entry).find(p=>entry.section!=='Legend'||normalizeName(p.type)==='legend');return p?.name||entry.name;}
 function deckText(deck){return SECTIONS.filter(s=>deck.entries.some(e=>e.section===s)).map(s=>`${s}:\n${deck.entries.filter(e=>e.section===s).map(e=>`${e.required} ${requirementName(e)}${e.code?' ('+e.code+')':''}`).join('\n')}`).join('\n\n')+'\n';}
 // Lightweight native XLSX writer: four sheets, no online spreadsheet dependency.
@@ -818,7 +833,7 @@ function updateScanUI(){const start=document.getElementById('scan-start'),stop=d
  }
 }}
 function loadScript(url){return new Promise((resolve,reject)=>{if(window.Tesseract)return resolve();let script=document.createElement('script');script.src=url;script.onload=()=>window.Tesseract?resolve():reject(new Error('OCR library did not initialise'));script.onerror=()=>reject(new Error('OCR library download failed; internet connection required'));document.head.appendChild(script);});}
-async function startScanner(){if(scanner.running||scanner.starting)return;if(!navigator.mediaDevices?.getUserMedia){toast('This browser cannot access the camera. Open the app using HTTPS or localhost.',true);return;}scanner.starting=true;const startToken=++scanner.loopToken;scanner.sessionCount=0;scanner.sessionId=uid();scanner.latchedCode=null;scanner.lastCandidate=null;scanner.stable=0;scanner.missed=0;scanner.pending=null;scanner.foilCode=null;scanner.foilSamples=[];scanner.acceptedHash=null;scanner.ocrCycles=0;scanner.lastSuccess=null;const last=document.getElementById('scan-last');if(last){last.classList.remove('is-success');last.textContent='Reading the bottom-left code (including tiny a suffix)';}updateScanUI();setScanStatus('Requesting rear camera…','● Starting');let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:960}}});if(startToken!==scanner.loopToken){stream.getTracks().forEach(t=>t.stop());return;}scanner.stream=stream;const video=document.getElementById('scan-video');if(!video)throw new Error('Scanner closed');scanner.video=video;video.srcObject=stream;await video.play();if(startToken!==scanner.loopToken)return;setScanStatus('Loading OCR recognition engine…','● Preparing');await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');if(startToken!==scanner.loopToken)return;const worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});if(startToken!==scanner.loopToken){await worker.terminate();return;}scanner.worker=worker;await scanner.worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- /•.'});if(startToken!==scanner.loopToken)return;scanner.starting=false;scanner.running=true;scanner.foilTimer=setInterval(()=>{if(!scanner.running||scanner.loopToken!==startToken||!scanner.foilCode||scanner.pending||scanner.latchedCode)return;try{const sample=readFoilFrame();if(sample){scanner.foilSamples.push(sample);if(scanner.foilSamples.length>30)scanner.foilSamples.shift();}}catch(e){}},135);updateScanUI();setScanStatus('Hold card steady and tilt gently to reveal the finish','● Live OCR active');scanLoop(startToken);}catch(e){if(startToken!==scanner.loopToken)return;console.error(e);toast('Scanner could not start: '+e.message,true);await stopScanner();}}
+async function startScanner(){if(scanner.running||scanner.starting)return;if(!navigator.mediaDevices?.getUserMedia){toast('This browser cannot access the camera. Open the app using HTTPS or localhost.',true);return;}scanner.starting=true;const startToken=++scanner.loopToken;scanner.sessionCount=0;scanner.sessionId=uid();scanner.latchedCode=null;scanner.lastCandidate=null;scanner.stable=0;scanner.missed=0;scanner.pending=null;scanner.deckNotice=false;scanner.foilCode=null;scanner.foilSamples=[];scanner.acceptedHash=null;scanner.ocrCycles=0;scanner.lastSuccess=null;const last=document.getElementById('scan-last');if(last){last.classList.remove('is-success');last.textContent='Reading the bottom-left code (including tiny a suffix)';}updateScanUI();setScanStatus('Requesting rear camera…','● Starting');let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:960}}});if(startToken!==scanner.loopToken){stream.getTracks().forEach(t=>t.stop());return;}scanner.stream=stream;const video=document.getElementById('scan-video');if(!video)throw new Error('Scanner closed');scanner.video=video;video.srcObject=stream;await video.play();if(startToken!==scanner.loopToken)return;setScanStatus('Loading OCR recognition engine…','● Preparing');await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');if(startToken!==scanner.loopToken)return;const worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});if(startToken!==scanner.loopToken){await worker.terminate();return;}scanner.worker=worker;await scanner.worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- /•.*'});if(startToken!==scanner.loopToken)return;scanner.starting=false;scanner.running=true;scanner.foilTimer=setInterval(()=>{if(!scanner.running||scanner.loopToken!==startToken||!scanner.foilCode||scanner.pending||scanner.latchedCode)return;try{const sample=readFoilFrame();if(sample){scanner.foilSamples.push(sample);if(scanner.foilSamples.length>30)scanner.foilSamples.shift();}}catch(e){}},135);updateScanUI();setScanStatus('Hold card steady and tilt gently to reveal the finish','● Live OCR active');scanLoop(startToken);}catch(e){if(startToken!==scanner.loopToken)return;console.error(e);toast('Scanner could not start: '+e.message,true);await stopScanner();}}
 async function stopScanner(){scanner.running=false;scanner.starting=false;scanner.loopToken++;if(scanner.foilTimer){clearInterval(scanner.foilTimer);scanner.foilTimer=null;}if(scanner.flashTimeout){clearTimeout(scanner.flashTimeout);scanner.flashTimeout=null;}document.getElementById('camera-box')?.classList.remove('scan-succeeded');scanner.pending=null;scanner.foilCode=null;scanner.foilSamples=[];if(scanner.stream){for(const track of scanner.stream.getTracks())track.stop();scanner.stream=null;}if(scanner.video){scanner.video.srcObject=null;scanner.video=null;}if(scanner.worker){const w=scanner.worker;scanner.worker=null;try{await w.terminate();}catch(e){}}scanner.latchedCode=null;scanner.lastCandidate=null;scanner.stable=0;updateScanUI();setScanStatus('Scanner stopped','● Camera off');}
 // Convert the *visible* card guide into source-video pixels. CSS uses object-fit: cover,
 // so assuming a fixed camera crop would scan the wrong area on portrait phones.
@@ -882,7 +897,7 @@ function matchOCR(text){
   if(match&&normalizeName(match.type)==='rune')runeMatches.push({card:match,exact:!!rm[3]});
  }
  if(runeMatches.length){runeMatches.sort((a,b)=>Number(b.exact)-Number(a.exact));return runeMatches[0].card;}
- const rx=/\b([A-Z0-9]{2,5})[\s.:-]*([0-9]{1,3})(?:\s*([A-Z]))?\s*(?:\/\s*\d{2,4})?/g;
+ const rx=/\b([A-Z0-9]{2,5})[\s.:-]*([0-9]{1,3})(?:\s*([A-Z*]))?\s*(?:\/\s*\d{2,4})?/g;
  let m;const matches=[];
  while((m=rx.exec(upper))){
   const set=m[1].replace(/^0GN$/,'OGN'),num=m[2].padStart(3,'0'),suffix=m[3]||'';
@@ -894,7 +909,7 @@ function matchOCR(text){
  }
  // OCR occasionally joins the set and number (e.g. SFD088A/221).
  if(!matches.length){
-  const joined=/(?:^|[^A-Z0-9])([A-Z]{3})([0-9]{3})([A-Z]?)/g;
+  const joined=/(?:^|[^A-Z0-9])([A-Z]{3})([0-9]{3})([A-Z*]?)/g;
   let compact;
   while((compact=joined.exec(upper))){
    const exact=codeIndex.get(compact[1]+compact[2]+(compact[3]||''));
@@ -930,10 +945,11 @@ function commitScan(card,finish,fp,source='manual',detectedCode=''){
  save();scanner.sessionCount++;scanner.latchedCode=detectedCode||scanner.pending?.detectedCode||normalizedCode(card.code);scanner.acceptedHash=fp||scanner.acceptedHash;
  scanner.pending=null;scanner.foilCode=null;scanner.foilSamples=[];
  beep();showScanSuccess(card,finish);updateScanUI();setScanStatus(`✓ ${card.name} captured. Show the next card.`,'● Card captured');
+ notifyDecksAfterScan(card,finish);
 }
 async function scanLoop(token){
  while(scanner.running&&scanner.loopToken===token){
-  if(scanner.pending){await delay(150);continue;}
+  if(scanner.pending||scanner.deckNotice){await delay(150);continue;}
   let observed=null,fp=null,confidence=0,primaryMatch=false;
   try{
    const frame=frameForOCR();fp=frame.fp;scanner.ocrCycles++;
@@ -1116,7 +1132,7 @@ function smartWishlist(){const rows=new Map();for(const d of state.decks){for(co
 function renderWishlist(){const rows=smartWishlist(),cost=rows.reduce((t,r)=>t+(r.quote?r.short*r.quote.amount:0),0),uncosted=rows.filter(r=>!r.quote).reduce((t,r)=>t+r.short,0);return `<div class="row-between wrap mb18"><div><h2>Smart wishlist</h2><p class="muted small">Missing copies from your saved decklists and optional personal wishlist. Bulk is counted once across decks.</p></div><span class="pill">${rows.reduce((t,r)=>t+r.short,0)} copies to find</span></div><div class="stats"><div class="stat-card"><div class="stat-top">MISSING COPIES</div><div class="stat-value">${rows.reduce((t,r)=>t+r.short,0)}</div></div><div class="stat-card"><div class="stat-top">DISTINCT CARDS</div><div class="stat-value">${rows.length}</div></div><div class="stat-card"><div class="stat-top">KNOWN COST ESTIMATE</div><div class="stat-value value-small">${cost?priceText({amount:cost}):'N/A'}</div><div class="stat-sub">${uncosted} unpriced missing copies</div></div></div><div class="panel mb18"><h3>Add a personal wishlist item</h3><div class="row wrap"><input id="wish-name" class="input grow-field" list="wish-names" placeholder="Card name (e.g. Flame Chompers)" autocomplete="off"/><datalist id="wish-names">${getNamesForSearch().slice(0,1800).map(g=>`<option value="${escapeHtml(g.name)}"></option>`).join('')}</datalist><label class="form-field mini-qty"><span>Target owned</span><input id="wish-qty" class="input" type="number" min="1" max="999" value="3" /></label><button class="btn btn-primary" data-action="wish-add">＋ Add goal</button></div><p class="muted micro">Personal goal quantities refer to total owned copies, not additional copies beyond deck requirements.</p></div><div class="panel"><div class="panel-heading"><h3>Cards to acquire</h3><span class="muted micro">${escapeHtml('USD · TCGplayer via RiftHunt (daily)')}</span></div>${rows.length?rows.map(r=>{const m=Object.values(state.manualWishlist||{}).find(w=>normalizeName(requirementName({name:w.name,section:'Legend'}))===normalizeName(r.name));return `<div class="list-row"><div class="item-main"><strong>${escapeHtml(r.name)}</strong><small>Need ${r.openNeeded} unassigned for ${r.decks.size} deck${r.decks.size===1?'':'s'} · Bulk ${r.bulk} · Owned ${r.owned}${m?' · Personal target '+m.target:''}</small><small>${[...r.decks].map(escapeHtml).join(', ')||'Personal wishlist'}</small></div><div class="val-column"><strong class="price-figure">${escapeHtml(r.quote?priceText(r.quote):'N/A')}</strong><span class="muted micro">Estimate each</span></div><span class="badge badge-warning">Short ${r.short}</span><div class="row wrap"><button class="btn btn-small btn-ghost" data-action="card-detail" data-name="${escapeHtml(r.name)}">View</button>${m?`<button class="btn btn-small btn-ghost" data-action="wish-remove" data-name="${escapeHtml(r.name)}">Remove goal</button>`:''}</div></div>`;}).join(''):`<div class="empty"><h3>No missing cards</h3><p>Import a deck to calculate shortages, or set a personal wishlist target.</p></div>`}</div><p class="muted micro mt16">Estimate uses an available quoted printing, not a promise of stock or the exact version you want. Unpriced copies are excluded.</p>`;}
 function renderLocations(){const names=state.locationNames||[],stored=totalStorage(),items=ownedEntries();return `<div class="row-between wrap mb24"><div><h2>Physical storage</h2><p class="muted small">Create binders or boxes, then move physical cards to them. Deck allocations stay separate.</p></div><span class="pill">${stored} copies in ${names.length} custom locations</span></div><div class="panel mb18"><h3>Add a location</h3><div class="row wrap"><input id="location-name" class="input grow-field" placeholder="e.g. Trade Binder, Box 1, Foil Binder" maxlength="60"/><button class="btn btn-primary" data-action="location-add">＋ Create location</button></div><div class="row wrap mt16">${names.map(n=>{const qty=items.reduce((a,i)=>a+Number(state.extraLocations?.[i.key]?.[n]||0),0);return `<span class="location-pill"><strong>${escapeHtml(n)}</strong> · ${qty} <button class="btn btn-small btn-ghost" data-action="location-delete" data-location="${escapeHtml(n)}" title="Delete empty location" ${qty?'disabled':''}>×</button></span>`;}).join('')||'<span class="muted small">No custom locations yet. Your cards start in Bulk.</span>'}</div></div><div class="panel"><div class="panel-heading"><h3>Move cards between Bulk and storage</h3><span class="muted small">1 copy per tap</span></div>${items.length?items.map(e=>{const placed=Object.entries(state.extraLocations?.[e.key]||{}).filter(([,n])=>n>0);return `<div class="list-row"><div class="thumb">${cardArt(e.card)}</div><div class="item-main"><strong>${escapeHtml(e.card.name)}</strong><small>${escapeHtml(e.card.code)} · ${escapeHtml(e.finish)} · Bulk ${e.bulk} · Stored ${e.stored}</small>${placed.length?`<div class="row wrap mt8">${placed.map(([n,v])=>`<span class="location-pill">${escapeHtml(n)}: ${v}<button class="btn btn-small btn-ghost" data-action="location-return" data-key="${escapeHtml(e.key)}" data-location="${escapeHtml(n)}">↶ 1</button></span>`).join('')}</div>`:''}</div><div class="row wrap">${names.length?`<select class="mini-select" data-store-select="${escapeHtml(e.key)}" aria-label="Storage destination for ${escapeHtml(e.card.name)}">${names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}</select><button class="btn btn-small btn-green-outline" data-action="location-move" data-key="${escapeHtml(e.key)}" ${e.bulk?'':'disabled'}>Move 1</button>`:'<span class="muted micro">Create a location first</span>'}</div></div>`;}).join(''):`<div class="empty"><h3>No owned cards yet</h3><p>Scan your first cards or add them from Search.</p></div>`}</div>`;}
 function setGroups(){const by=new Map();for(const source of catalog){const p=getMeta(source.id);const set=p.set||'Unknown';if(!set)continue;let r=by.get(set);if(!r){r={set,setName:p.setName||set,names:new Set(),foilPrints:new Set(),normalPrints:new Set(),haveNames:new Set(),haveFoil:new Set(),haveNormal:new Set()};by.set(set,r);}const n=normalizeName(p.name);r.names.add(n);if(priceState.entries.length){const quote=priceRecord(p);if(quote?.allowedFinishes?.includes('foil'))r.foilPrints.add(p.id);if(quote?.allowedFinishes?.includes('normal'))r.normalPrints.add(p.id);}}
- for(const e of ownedEntries()){const set=e.card.set||'Unknown',r=by.get(set);if(!r)continue;if(r.names.has(normalizeName(e.card.name)))r.haveNames.add(normalizeName(e.card.name));if(e.finish==='Foil')r.haveFoil.add(e.card.id);else r.haveNormal.add(e.card.id);}return [...by.values()].sort((a,b)=>a.setName.localeCompare(b.setName));}
+ for(const e of ownedEntries()){const set=e.card.set||'Unknown',r=by.get(set);if(!r)continue;if(r.names.has(normalizeName(e.card.name)))r.haveNames.add(normalizeName(e.card.name));if(e.finish==='Foil')r.haveFoil.add(e.card.id);else r.haveNormal.add(e.card.id);}return [...by.values()].sort((a,b)=>{const main=['OGN','SFD','UNL','VEN','RAD'];const ai=main.indexOf(a.set),bi=main.indexOf(b.set);return (ai<0?999:ai)-(bi<0?999:bi)||a.setName.localeCompare(b.setName);});}
 function renderSets(){const groups=setGroups();return `<div class="row-between wrap mb24"><div><h2>Set completion</h2><p class="muted small">Progress by distinct card name. Foil and non-foil printing tracking is shown separately where catalogue data is available.</p></div><span class="pill">${groups.length} sets</span></div><div class="set-grid">${groups.map(r=>{const pct=r.names.size?Math.round(r.haveNames.size/r.names.size*100):0;return `<div class="panel set-tile"><div class="eyebrow">${escapeHtml(r.set)}</div><h3>${escapeHtml(r.setName)}</h3><div class="row-between"><strong>${r.haveNames.size} / ${r.names.size} Cards</strong><span class="muted">${pct}%</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="set-printings"><span>Foil printings <b>${r.haveFoil.size}${r.foilPrints.size?` / ${r.foilPrints.size}`:''}</b></span><span>Non-foil printings <b>${r.haveNormal.size}${r.normalPrints.size?` / ${r.normalPrints.size}`:''}</b></span></div><button class="btn btn-small btn-ghost" data-action="set-view" data-set="${escapeHtml(r.set)}">Browse set cards →</button></div>`}).join('')}</div>${!catalogReady?`<div class="info-note mt16">The full card catalogue has not loaded. Completion percentages are incomplete until you connect and refresh the catalogue.</div>`:''}<p class="muted micro mt16">Completion depends on available catalogue data; special promos and duplicate printing names can affect denominators. Owned foil counts may include versions not sold in that finish; review scanned finishes.</p>`;}
 function deckLegalReview(deck){const basic=checkDeck(deck),issues=basic.issues.slice(),checks=[];const legend=deck.entries.find(e=>e.section==='Legend'),champion=deck.entries.find(e=>e.section==='Champion');let verified=0,unknown=0;
  const legendMeta=legend?printingsFor(legend.name)[0]:null;const legendPrice=legendMeta?priceRecord(legendMeta):null;const domains=legendPrice?.domains?.length?legendPrice.domains:legendMeta?.domains||[];
@@ -1376,7 +1392,7 @@ renderSearch=function(){
   <select id="set-filter" class="select" aria-label="Filter by set"><option value="all">All sets</option>${sets.map(([s,n])=>`<option value="${escapeHtml(s)}" ${ui.setFilter===s?'selected':''}>${escapeHtml(n||s)}</option>`).join('')}</select>
   <label class="checkbox-line"><input id="owned-only" type="checkbox" ${ui.ownedOnly?'checked':''}/> Owned only</label>${sortWidget('search-sort',ui.searchSort)}
  </div>
- ${shown.length?`<div class="card-grid">${shown.map(p=>{const owned=printingOwned(p);return `<button type="button" class="collection-card" data-action="card-detail" data-name="${escapeHtml(p.name)}" data-id="${escapeHtml(p.id)}" aria-label="View ${escapeHtml(p.name)}, ${escapeHtml(p.code)}"><div class="card-art" title="Tap artwork to enlarge">${cardArt(p)}${owned?`<span class="owned-chip">×${owned} owned</span>`:''}</div><div class="card-meta"><strong title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</strong>${banBadge(p.name)}<div class="card-sub"><span>${escapeHtml(p.code||p.id)}</span><span>${p.isAltArt?'Alternate art':escapeHtml(p.rarity||'Printing')}</span></div><div class="card-printing-set">${escapeHtml(p.setName||p.set)}</div><div class="card-price-tag">${displayPrintingMarket(p)}</div></div></button>`}).join('')}</div>${all.length>shown.length?`<p class="muted small text-center mt16">Showing ${shown.length} of ${all.length} printings. Search to narrow your list.</p>`:''}`:`<div class="empty"><h3>No matching printings</h3><p>Try a shorter name or collector number. Online catalogue data may be needed.</p></div>`}`;
+ ${shown.length?`<div class="card-grid">${shown.map(p=>{const owned=printingOwned(p);return `<button type="button" class="collection-card" data-action="card-detail" data-name="${escapeHtml(p.name)}" data-id="${escapeHtml(p.id)}" aria-label="View ${escapeHtml(p.name)}, ${escapeHtml(p.code)}"><div class="card-art" title="Tap artwork to enlarge">${cardArt(p)}${owned?`<span class="owned-chip">×${owned} owned</span>`:''}</div><div class="card-meta"><strong title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</strong>${banBadge(p.name)}<div class="card-sub"><span>${escapeHtml(p.code||p.id)}</span><span>${escapeHtml(isOvernumberedPrinting(p)?printingLabel(p):p.isAltArt?'Alternate art':p.rarity||'Printing')}</span></div><div class="card-printing-set">${escapeHtml(p.setName||p.set)}</div><div class="card-price-tag">${displayPrintingMarket(p)}</div></div></button>`}).join('')}</div>${all.length>shown.length?`<p class="muted small text-center mt16">Showing ${shown.length} of ${all.length} printings. Search to narrow your list.</p>`:''}`:`<div class="empty"><h3>No matching printings</h3><p>Try a shorter name or collector number. Online catalogue data may be needed.</p></div>`}`;
 };
 
 function setTileHTML(r){
@@ -1408,7 +1424,7 @@ function renderSetBrowser(){
  <div class="set-view-banner set-theme-${escapeHtml(set.toLowerCase())}">${setLogoLabel(set,setName)}<div class="set-banner-stats"><strong>${meta?.haveNames.size||0} / ${meta?.names.size||prints.length} Cards</strong><span>${escapeHtml(set)} · Collection completion</span></div></div>
  <div class="row-between mb18 wrap"><div><h2>${escapeHtml(setName)} cards</h2><p class="muted small">Browse individual printings, including alternate art, foil market references and collector numbers.</p></div><span class="pill">${fmt(prints.length)} printings</span></div>
  <div class="toolbar sort-toolbar"><div class="search-wrap"><span class="search-icon">⌕</span><input id="set-card-search" class="input input-search" placeholder="Search this set…" value="${escapeHtml(ui.setQuery)}" /></div><label class="checkbox-line"><input id="set-owned-only" type="checkbox" ${ui.setOwnedOnly?'checked':''}/> Owned only</label>${sortWidget('set-sort',ui.setSort)}</div>
- ${shown.length?`<div class="card-grid">${shown.map(p=>{const count=printingOwned(p);return `<button class="collection-card" data-action="card-detail" data-name="${escapeHtml(p.name)}" data-id="${escapeHtml(p.id)}"><div class="card-art">${cardArt(p)}${count?`<span class="owned-chip">×${count} owned</span>`:''}</div><div class="card-meta"><strong title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</strong>${banBadge(p.name)}<div class="card-sub"><span>${escapeHtml(p.code)}</span><span>${p.isAltArt?'Alt art':escapeHtml(p.rarity)}</span></div><div class="card-price-tag">${displayPrintingMarket(p)}</div></div></button>`;}).join('')}</div>${prints.length>shown.length?`<p class="muted small text-center mt16">Showing ${shown.length} of ${prints.length} printings. Search to narrow the set.</p>`:''}`:`<div class="empty"><h3>No cards matched</h3><p>Try another name or collector number.</p></div>`}`;
+ ${shown.length?`<div class="card-grid">${shown.map(p=>{const count=printingOwned(p);return `<button class="collection-card" data-action="card-detail" data-name="${escapeHtml(p.name)}" data-id="${escapeHtml(p.id)}"><div class="card-art">${cardArt(p)}${count?`<span class="owned-chip">×${count} owned</span>`:''}</div><div class="card-meta"><strong title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</strong>${banBadge(p.name)}<div class="card-sub"><span>${escapeHtml(p.code)}</span><span>${escapeHtml(isOvernumberedPrinting(p)?printingLabel(p):p.isAltArt?'Alt art':p.rarity)}</span></div><div class="card-price-tag">${displayPrintingMarket(p)}</div></div></button>`;}).join('')}</div>${prints.length>shown.length?`<p class="muted small text-center mt16">Showing ${shown.length} of ${prints.length} printings. Search to narrow the set.</p>`:''}`:`<div class="empty"><h3>No cards matched</h3><p>Try another name or collector number.</p></div>`}`;
 }
 renderInventory=function(){
  if(ui.inventorySet)return renderSetBrowser();
@@ -1557,7 +1573,7 @@ function modalPrintingDetail(){
  const p=getMeta(ui.modal.id);if(!p?.id)return modalShell('Card unavailable','','<p class="muted">Refresh the catalogue to load this printing.</p>');
  const normal=keyFor(p.id,'Normal'),foil=keyFor(p.id,'Foil'),locations=printingLocations(p);
  const count=ownedQty(normal)+ownedQty(foil),finishOnly=isFoilOnlyAlternate(p);
- const label=p.isAltArt?'Alternate Art':p.isVariant?'Special printing':'Regular Art';
+ const label=printingLabel(p);
  const quoteNormal=quoteFor(p,'Normal'),quoteFoil=quoteFor(p,'Foil');
  const locationRows=locations.length?locations.map(r=>`<div class="location-row"><div><strong>${escapeHtml(r.label)}</strong><div class="muted micro">${escapeHtml(r.finish)}</div></div><strong>${r.quantity}</strong></div>`).join(''):'<p class="muted small">No copies of this printing recorded yet.</p>';
  return modalShell(p.name,`${p.code||p.id} · ${p.setName||p.set} · ${label} · ${count} owned`,
@@ -1728,6 +1744,90 @@ document.addEventListener('click',event=>{
  const button=event.target.closest('[data-action="ban-format"]');
  if(!button)return;
  ui.banFormat=button.dataset.format==='2v2'?'2v2':'standard';render();
+});
+
+
+// v1.20 — newly scanned cards that a deck needs can be assigned immediately.
+function availableDeckEntries(deck){
+ return deck.entries.filter(entry=>entryAssigned(deck,entry)<entry.required&&entryBulk(entry)>0);
+}
+function scannedCardDeckMatches(card){
+ return state.decks.flatMap(deck=>deck.entries.filter(entry=>
+  entryAssigned(deck,entry)<entry.required && eligiblePrintings(entry).some(p=>p.id===card.id)
+ ).map(entry=>({deck,entry,remaining:entry.required-entryAssigned(deck,entry)})));
+}
+function notifyDecksAfterScan(card,finish){
+ if(!card?.id)return;
+ const matches=scannedCardDeckMatches(card);
+ if(!matches.length)return;
+ scanner.deckNotice=true;
+ showModal('deck-available',{cardId:card.id,finish});
+}
+function deckAvailabilityModal(){
+ const notice=ui.modal||{},card=notice.cardId?getMeta(notice.cardId):null;
+ const matches=card?scannedCardDeckMatches(card):[];
+ const deck=notice.deckId?findDeck(notice.deckId):null;
+ const rows=deck?availableDeckEntries(deck).map(entry=>({deck,entry,remaining:entry.required-entryAssigned(deck,entry)})):matches;
+ const cardMarkup=card?`<div class="deck-alert-scanned"><span class="deck-alert-thumb">${cardArt(card)}</span><div><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(card.code)} · ${escapeHtml(notice.finish||'')} · Added to Bulk</small></div></div>`:'';
+ return modalShell(deck?'Cards ready for '+deck.name:'Card needed for a deck',
+  deck?`${rows.length} card type${rows.length===1?'':'s'} ready to assign`:`${matches.length} deck requirement${matches.length===1?'':'s'} can use this card`,
+  `${cardMarkup}${rows.length?`<div class="deck-alert-list">${rows.map(({deck:d,entry,remaining})=>{
+   const print=card||eligiblePrintings(entry).find(p=>p.imageUrl)||eligiblePrintings(entry)[0];
+   return `<div class="deck-alert-row"><span class="deck-alert-thumb">${cardArt(print)}</span><div class="deck-alert-description"><strong>${escapeHtml(d.name)}</strong><span>${escapeHtml(requirementName(entry))}</span><small>Need ${entry.required} · Assigned ${entryAssigned(d,entry)} · ${entryBulk(entry)} in Bulk</small></div><button class="btn btn-primary btn-small" data-action="deck-alert-assign" data-deck-id="${escapeHtml(d.id)}" data-entry-id="${escapeHtml(entry.id)}" data-printing-id="${escapeHtml(card?.id||'')}">Assign 1</button></div>`;
+  }).join('')}</div>`:'<p class="muted small">No unassigned copies are available now.</p>'}`,
+ '<button class="btn btn-ghost" data-action="deck-alert-dismiss">Not now</button>',true);
+}
+const renderModalV120=renderModal;
+renderModal=function(){
+ if(ui.modal?.type==='deck-available'||ui.modal?.type==='deck-ready'){
+  document.getElementById('modal-root').innerHTML=deckAvailabilityModal();return;
+ }
+ renderModalV120();
+};
+const renderDeckDetailV120=renderDeckDetail;
+renderDeckDetail=function(deck){
+ const ready=availableDeckEntries(deck).length;
+ const html=renderDeckDetailV120(deck);
+ if(!ready)return html;
+ const anchor='<div class="row wrap mb18"><button class="btn btn-primary" data-action="auto-assign"';
+ const notice=`<div class="deck-ready-banner"><div><strong>✦ ${ready} card type${ready===1?'':'s'} ready to assign</strong><span>Copies already in Bulk can complete missing deck slots.</span></div><button class="btn btn-primary btn-small" data-action="deck-ready-open" data-deck-id="${escapeHtml(deck.id)}">Review available cards</button></div>`;
+ return html.replace(anchor,notice+anchor);
+};
+const renderDecksV120=renderDecks;
+renderDecks=function(){
+ let html=renderDecksV120();if(ui.deckId)return html;
+ for(const deck of state.decks){
+  const n=availableDeckEntries(deck).length;if(!n)continue;
+  const head=`<button class="deck-card" data-action="open-deck" data-id="${escapeHtml(deck.id)}">`;
+  html=html.replace(head,head+`<span class="deck-notice-badge">✦ ${n} ready to assign</span>`);
+ }
+ return html;
+};
+document.addEventListener('click',event=>{
+ const button=event.target.closest('[data-action]');if(!button)return;
+ const action=button.dataset.action;
+ if(action==='deck-alert-dismiss'){scanner.deckNotice=false;closeModal();return;}
+ if(action==='deck-ready-open'){
+  const deck=findDeck(button.dataset.deckId);
+  if(deck)showModal('deck-ready',{deckId:deck.id});return;
+ }
+ if(action!=='deck-alert-assign')return;
+ const deck=findDeck(button.dataset.deckId),entry=deck?.entries.find(e=>e.id===button.dataset.entryId);
+ if(!deck||!entry)return;
+ // Use the exact scanning result if it is still in Bulk. Never move another
+ // card, alter stock ownership or assign an unavailable copy unexpectedly.
+ const preferred=ownedKeysByName(entry.name,entry.code,entry.section).find(key=>
+  unpackKey(key).id===button.dataset.printingId && bulkQty(key)>0);
+ if(button.dataset.printingId&&!preferred){toast('This scanned printing is no longer in Bulk.',true);renderModal();return;}
+ if(!assignOne(deck,entry,preferred||null)){toast('No available copy or deck requirement is complete.',true);renderModal();return;}
+ logActivity('Assigned 1 × '+entry.name+' to '+deck.name+' after a scan',preferred||null,'assign');save();
+ const wasScanModal=ui.modal?.type==='deck-available';
+ if(wasScanModal){
+  const card= getMeta(ui.modal.cardId);
+  if(!scannedCardDeckMatches(card).length){scanner.deckNotice=false;closeModal();}
+  else renderModal();
+ }else{render();}
+ toast('Assigned 1 copy to '+deck.name+'.');
 });
 
 render();
