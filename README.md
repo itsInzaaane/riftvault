@@ -1,8 +1,15 @@
-# RiftVault v1.21 — Home, Point Counter & Smart Management
+# RiftVault v1.22 — Screen-Filling Counter & Refined Hero Artwork
 
 A mobile/desktop Riftbound collection companion built on your v1.20 Blue Shield Edition. Existing inventory, foil/alt/signature printings, rune assignment, set images, TCGplayer/RiftHunt market prices, Bilgewater links, banned labels, decks, OCR scanning, Rules Library and Excel/JSON downloads are retained.
 
-## New in this version
+## Refined in v1.22
+
+- **Mobile Point Counter uses available screen height:** The two red/blue halves expand evenly to fill the screen above the existing bottom navigation, with bigger scoring controls. The display adapts as the browser chrome or phone height changes; it scrolls rather than hiding controls on unusually short devices.
+- **Homepage artwork is larger and lower:** The single changing Overnumbered card art is scaled up, positioned lower, and feathered with a broad image alpha mask so there is no visible vertical cut-off. The left-side text retains a readable dark gradient. Applies to phone and desktop.
+- **No changes to inventory schema:** Existing saved cards, decks, pricing, rules and scheduled update workflow are retained. The package continues to include `.github/workflows` and `scripts` folders.
+
+## Features retained from v1.21
+
 
 - **Responsive Home/Overview:** Simplified desktop and phone dashboard with one featured overnumbered card image at a time. Returning to Home chooses a different image, avoiding an immediate repeat when there are alternatives. The picture is loaded from the card catalogue, so it needs an internet connection and a valid image URL.
 - **Point Counter:** Open under *More → Point Counter*. Opponent faces away (180° rotated) in red at the top; your score in blue at the bottom. +/−, 50-step Undo history, Reset, 1v1 (8) or 2v2 (11), saved on this device. Reaching a target prompts a win-condition check rather than declaring an automatic victory.

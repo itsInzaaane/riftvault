@@ -1,9 +1,12 @@
 /* RiftVault 1.21: cleaner responsive Home, red/blue tabletop counter,
    readable backup/source status and scan verification. */
 .rv-home{display:flex;flex-direction:column;gap:18px;max-width:1320px;margin:0 auto}
-.rv-home-hero{position:relative;min-height:240px;overflow:hidden;isolation:isolate;border:1px solid #3265ac;border-radius:20px;background:linear-gradient(122deg,#112f5c,#15152e);box-shadow:0 8px 24px #0005}
-.rv-home-art{position:absolute;inset:0 0 0 auto;height:100%;width:60%;object-fit:cover;object-position:center 36%;z-index:-2}
-.rv-home-shade{position:absolute;inset:0;background:linear-gradient(90deg,#081a36 0%,#0a2142f8 28%,#071731ae 58%,#09203b25 100%),linear-gradient(0deg,#071a2bc4,transparent 50%);z-index:-1}
+.rv-home-hero{position:relative;min-height:240px;overflow:hidden;isolation:isolate;border:1px solid #3265ac;border-radius:20px;background:linear-gradient(115deg,#081a36,#0c294b);box-shadow:0 8px 24px #0005}
+.rv-home-art{position:absolute;inset:auto -8% -18% auto;height:134%;width:91%;object-fit:cover;object-position:center 58%;z-index:-2;pointer-events:none;
+ /* Cover much more of the banner. The feathered image mask eliminates the hard left edge. */
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 13%,rgba(0,0,0,.65) 31%,#000 59%);
+ mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 13%,rgba(0,0,0,.65) 31%,#000 59%)}
+.rv-home-shade{position:absolute;inset:0;background:linear-gradient(90deg,#081a36 0%,#081a36f7 19%,#081b36d9 35%,#081b3699 56%,#081b3638 78%,#081b3630 100%),linear-gradient(0deg,#071a2baa,transparent 63%);z-index:-1;pointer-events:none}
 .rv-home-hero-inner{padding:25px 28px;max-width:800px}
 .rv-home-hero h2{font-size:clamp(23px,2.4vw,34px);line-height:1.18;letter-spacing:-.5px;margin:8px 0}
 .rv-home-hero p{font-size:13px;color:#c0d0e8;max-width:510px;margin:0 0 25px}
@@ -53,7 +56,11 @@
 .rv-backup-list{max-height:50vh;overflow:auto}.rv-backup-row{display:flex;gap:9px;align-items:center;padding:11px 3px;border-bottom:1px solid #354665}.rv-backup-row>div{flex:1;min-width:0}.rv-backup-row strong{font-size:13px}.rv-backup-row small{display:block;color:#b5c6e2;font-size:11px}.rv-backup-row .btn{flex:0 0 auto}
 .rv-scan-verify-body{display:flex;gap:13px;align-items:center;margin:13px 0}.rv-scan-verify-art{width:105px;flex:0 0 105px;max-height:145px;display:grid;place-items:center;overflow:hidden}.rv-scan-verify-art img{max-height:145px;max-width:100%;object-fit:contain}
 @media(max-width:700px){
- .rv-home-hero{min-height:217px;border-radius:17px}.rv-home-art{width:68%;object-position:center 22%}.rv-home-shade{background:linear-gradient(90deg,#07192ffb 0%,#071a2beb 39%,#0a1539a6 62%,#10193233 100%),linear-gradient(0deg,#071a33c9,transparent 65%)}
+ .rv-home-hero{min-height:217px;border-radius:17px}
+ .rv-home-art{width:112%;height:138%;right:-25%;bottom:-24%;object-position:center 62%;
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 18%,rgba(0,0,0,.78) 48%,#000 72%);
+ mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 18%,rgba(0,0,0,.78) 48%,#000 72%)}
+ .rv-home-shade{background:linear-gradient(90deg,#07192fff 0%,#07192ff2 31%,#081a31cc 54%,#081a3155 86%,#081a3145 100%),linear-gradient(0deg,#071a33c2,transparent 78%)}
  .rv-home-hero-inner{padding:20px 17px}.rv-home-hero h2{font-size:22px}.rv-home-hero p{font-size:12px;max-width:245px;margin-bottom:23px}.rv-home-mini{max-width:100%;margin-bottom:11px}.rv-home-mini strong{font-size:16px}.rv-home-mini small{font-size:10px}.rv-home-mini>div{padding:0 7px}.rv-home-feature{font-size:9px}
  .rv-home-actions{gap:8px}.rv-home-action{min-height:79px;padding:8px 3px}.rv-home-action>span{font-size:23px}.rv-home-action strong{font-size:12px;text-align:center}
  .rv-home-columns{grid-template-columns:1fr;gap:12px}.rv-home-pane{padding:13px}.rv-home-pane h3{font-size:15px}.rv-home-status{grid-template-columns:1fr}
@@ -61,3 +68,27 @@
 }
 @media(max-width:370px){.rv-home-mini strong{font-size:14px}.rv-home-mini small{font-size:9px}.rv-counter-panel{min-height:200px}.rv-counter-score{font-size:64px}.rv-counter-actions button{width:82px;height:48px}.rv-backup-row{flex-wrap:wrap}.rv-backup-row>div{flex-basis:100%}}
 @media(max-width:700px){body:has(.rv-counter-page) .topbar{display:none}body:has(.rv-counter-page) .footer{display:none}body:has(.rv-counter-page) .content{padding-top:15px}}
+
+/* RiftVault 1.22: responsive, screen-filling tabletop counter. */
+@media(max-width:700px){
+ body:has(.rv-counter-page) .content{padding:10px 15px 6px}
+ .rv-counter-page{display:flex;flex-direction:column;height:calc(100dvh - 95px);min-height:475px;max-width:none;margin:0 auto;gap:0}
+ .rv-counter-header{flex:0 0 auto;align-items:center;margin:0 0 12px;min-height:58px}
+ .rv-counter-header h2{font-size:23px}
+ .rv-counter-header .select{min-width:135px;max-width:51%;font-size:12px}
+ .rv-counter-board{flex:1 1 auto;min-height:0;gap:14px}
+ .rv-counter-panel{flex:1 1 0;min-height:0;border-radius:23px}
+ .rv-counter-rotator{min-height:0;padding:8px 12px;gap:clamp(6px,1.5dvh,15px)}
+ .rv-counter-label{font-size:clamp(13px,1.8dvh,17px)}
+ .rv-counter-score{font-size:clamp(66px,11dvh,108px);letter-spacing:-3px}
+ .rv-counter-score span{font-size:clamp(19px,3dvh,27px)}
+ .rv-counter-actions{gap:clamp(12px,5vw,28px)}
+ .rv-counter-actions button{height:clamp(52px,7.5dvh,76px);width:clamp(90px,29vw,132px);font-size:clamp(35px,5.5dvh,51px)}
+ .rv-counter-center{width:clamp(56px,8dvh,76px);height:clamp(56px,8dvh,76px)}
+ .rv-counter-center img{width:80%;height:80%}
+ .rv-counter-footer{flex:0 0 auto;margin:13px 0 7px;gap:12px}
+ .rv-counter-footer button{min-height:clamp(47px,6.5dvh,61px)}
+ .rv-counter-page>p.micro{flex:0 0 auto;margin:0 0 2px;font-size:9px;line-height:1.25}
+ .rv-counter-victory{flex:0 0 auto;margin:9px 0 0;padding:8px 12px}
+}
+@media(max-width:370px) and (max-height:680px){.rv-counter-page{min-height:490px}.rv-counter-score{font-size:62px}.rv-counter-actions button{height:48px;width:85px}}
