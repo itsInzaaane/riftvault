@@ -1,0 +1,117 @@
+{
+  "source": "https://playriftbound.com/en-us/rules-hub/",
+  "checkedAt": "2026-11-12T04:00:00+00:00",
+  "bans": {
+    "effectiveAt": "2026-09-18",
+    "standard": [
+      {
+        "name": "Called Shot",
+        "category": "Card"
+      },
+      {
+        "name": "Ekko, Recurrent",
+        "category": "Card"
+      },
+      {
+        "name": "Draven, Vanquisher",
+        "category": "Card"
+      },
+      {
+        "name": "Fight or Flight",
+        "category": "Card"
+      },
+      {
+        "name": "Scrapheap",
+        "category": "Card"
+      },
+      {
+        "name": "Stealthy Pursuer",
+        "category": "Card"
+      },
+      {
+        "name": "Stacked Deck",
+        "category": "Card"
+      },
+      {
+        "name": "The Arena\u2019s Greatest",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Aspirant\u2019s Climb",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Dreaming Tree",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Obelisk of Power",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Reaver\u2019s Row",
+        "category": "Battlefield"
+      }
+    ],
+    "duo": [
+      {
+        "name": "Called Shot",
+        "category": "Card"
+      },
+      {
+        "name": "Ekko, Recurrent",
+        "category": "Card"
+      },
+      {
+        "name": "Draven, Vanquisher",
+        "category": "Card"
+      },
+      {
+        "name": "Fight or Flight",
+        "category": "Card"
+      },
+      {
+        "name": "Scrapheap",
+        "category": "Card"
+      },
+      {
+        "name": "Stealthy Pursuer",
+        "category": "Card"
+      },
+      {
+        "name": "Stacked Deck",
+        "category": "Card"
+      },
+      {
+        "name": "The Arena\u2019s Greatest",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Aspirant\u2019s Climb",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Dreaming Tree",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Obelisk of Power",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Reaver\u2019s Row",
+        "category": "Battlefield"
+      },
+      {
+        "name": "Master Yi, Wuju Bladesman",
+        "category": "Legend"
+      }
+    ]
+  },
+  "rules": {
+    "coreUpdated": "2026-10-09",
+    "tournamentUpdated": "2026-10-09",
+    "coreUrl": "https://cmsassets.rgpub.io/sanity/files/dsfx7636/news_live/5c7946f7c3b8c6e0faff85ab6dadc6d2e721ea94.pdf",
+    "tournamentUrl": "https://cmsassets.rgpub.io/sanity/files/dsfx7636/news_live/861752822d217edf37d9febaeaf77a7d924c1bb6.pdf"
+  }
+}

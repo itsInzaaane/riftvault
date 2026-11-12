@@ -954,7 +954,7 @@ async function scanLoop(token){
   try{
    const frame=frameForOCR();fp=frame.fp;scanner.ocrCycles++;
    const out=await scanner.worker.recognize(frame.canvas);
-   observed=matchOCR(out?.data?.text||'');confidence=Number(out?.data?.confidence)||0;
+   observed=matchOCR(out?.data?.text||'');confidence=Number(out?.data?.confidence)||0;scanner.lastOcrConfidence=confidence;
    primaryMatch=!!observed;
    // Occasional wider pass rescues codes that fall outside the tight text strip.
    if(!observed&&!scanner.latchedCode&&scanner.ocrCycles%2===0&&scanner.running&&scanner.loopToken===token){

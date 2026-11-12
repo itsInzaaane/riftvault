@@ -1,26 +1,37 @@
-# RiftVault v1.20 — Blue Shield Edition
+# RiftVault v1.21 — Home, Point Counter & Smart Management
 
-Built on v1.18, retaining the card scanner, rune and foil handling, decks, banned-card labels, TXT import, Excel/JSON export, Rules Library, exact-printing search, five set PNG logos and daily TCGplayer pricing via RiftHunt.
+A mobile/desktop Riftbound collection companion built on your v1.20 Blue Shield Edition. Existing inventory, foil/alt/signature printings, rune assignment, set images, TCGplayer/RiftHunt market prices, Bilgewater links, banned labels, decks, OCR scanning, Rules Library and Excel/JSON downloads are retained.
 
-## New in this release
+## New in this version
 
-- **Blue Shield branding:** Uses the user-selected minimalist blue-shield/card icon across PWA icons and website; matching dark navy and electric-blue theme.
-- **Main sets first:** Origins, Spiritforged, Unleashed, Vendetta and Radiance, followed by other sets alphabetically. All set logos retained.
-- **Signature vs unsigned overnumbered:** Distinct collector keys and exact RiftHunt printing IDs, so one variant never borrows the other variant's price. A missing quote is `N/A`; existing locally misidentified cards should be corrected manually. `*` and legacy `s` signature markers are supported.
-- **Deck assignment suggestions:** On a successful card scan, if any incomplete deck needs that printing, a popup offers Assign 1 / Not now. It does not automatically allocate cards. Each deck also shows a badge and a Review available cards action when unassigned Bulk copies can fill deck requirements. Rune matching still works across sets.
+- **Responsive Home/Overview:** Simplified desktop and phone dashboard with one featured overnumbered card image at a time. Returning to Home chooses a different image, avoiding an immediate repeat when there are alternatives. The picture is loaded from the card catalogue, so it needs an internet connection and a valid image URL.
+- **Point Counter:** Open under *More → Point Counter*. Opponent faces away (180° rotated) in red at the top; your score in blue at the bottom. +/−, 50-step Undo history, Reset, 1v1 (8) or 2v2 (11), saved on this device. Reaching a target prompts a win-condition check rather than declaring an automatic victory.
+- **Smart Scan Verification:** Ambiguous/low-confidence readings, missing artwork and sensitive Signature/Overnumbered variants pause before counting a copy. Confirm the detected code/card image or select a different printing. The existing foil and alternate-art confirmation steps remain. Recognition must be checked on your physical camera.
+- **TXT deck export:** Already included in the source; preserved as *Deck → Export TXT*. Includes the Legend, Champion, MainDeck, Battlefields, Runes and Sideboard section headings/quantities.
+- **Automatic local inventory snapshots:** After data changes, IndexedDB stores an updated restore point, retaining up to 20 versions. A new version is started after a quiet 20-minute interval. Open *More → Settings & backup → Review / restore snapshots*. You can export a snapshot as JSON. **These are local backups, not cloud backups.** They can be lost if website data is cleared. On browsers with the File System Access API (some desktop Chromium browsers), optionally choose an external folder for writable JSON backups while permission remains granted. Android may not support this option. Use *Download JSON* regularly for an independent off-device backup.
+- **Official bans / rulebook updates:** Includes a dated snapshot (`official-updates.json`) and a GitHub Actions workflow that checks Riot's Rules Hub every six hours, publishes validated bans and current Core/Tournament rulebook links/dates, and updates BANNED labels/legality checks through the app feed. If the check fails, the app retains the prior snapshot and displays an unverified or stale status. **This requires installing/enabling the GitHub workflow; it is not automatic merely by uploading the website files.** The Rules Library's short human-authored summaries remain offline and need manual revision if the actual rules change. The official documents linked from the app follow the latest verified update.
+- **Centered app icon:** Uses the updated centered blue shield PNGs for the installed app, browser icon and phone home screen.
 
-## Update existing GitHub Pages site
+## IMPORTANT: How to deploy
 
-1. On your PHONE, open RiftVault → More → Settings & backup → Download JSON. Store this backup safely.
-2. Extract the ZIP, upload ALL files (including the new icon files and set PNG files) directly into the root of your existing GitHub `riftvault` repository, replacing the old files.
-3. Commit, confirm the Pages deployment under Actions, then close/reopen the phone web app. If the old theme persists, refresh the page without clearing website data.
-4. Test one Signature and one unsigned overnumbered card: their market values must be separate or `N/A`. Test a deck with one missing card, scan that card and confirm the prompt offers allocation to the correct deck.
+1. On the **same browser/phone you use for RiftVault**, open *More → Settings & backup → Download JSON*. Store it outside your phone's web-browser storage.
+2. Extract the ZIP. Upload the contents of the package to the **root** of your existing GitHub `riftvault` repository, keeping the file and folder paths exactly as provided. Replace older versions. Do not put the extracted folder itself inside the repository (unless its contents are at the root).
+3. Ensure the hidden `.github/workflows/official-rules-refresh.yml` and `scripts/refresh_official.py` paths are present in GitHub. Uploading only loose root files will NOT install the automatic rules checker. To add the workflow manually on GitHub, choose *Add file → Create new file* and type the full filename `.github/workflows/official-rules-refresh.yml`, then paste the YAML from the ZIP. Add `scripts/refresh_official.py` similarly. The `official-updates.json` file must also be at the root.
+4. Check your GitHub repository's **Settings → Actions → General → Workflow permissions**. The scheduled workflow needs permission to write repository contents. Set **Read and write permissions** if required, or ask your repository administrator to enable that setting. Do not commit any personal tokens or private API keys.
+5. Open **Actions → Refresh official Riftbound rules and bans → Run workflow** once to test it. A green check confirms the scheduled source check completed. It is scheduled every six hours, but GitHub schedules are not guaranteed to run at exact times. If Riot changes its page structure, validation will prevent an unverified overwrite; check the workflow log and the app's source status.
+6. Wait for **pages build and deployment** to succeed, then close/reopen `https://itsinzaaane.github.io/riftvault/` on desktop and phone. Refresh the browser if older files remain cached. If the installed icon remains old, you may need to remove and reinstall the home-screen shortcut (do **not** clear site storage).
 
-## Safeguards and limitations
+**The GitHub action depends on official public content, not a Riot API key.** The parser detects ban lists and rulebook document links/dates. It does not automatically regenerate the entire searchable rules text or infer unpublished bans, and it cannot guarantee instant tournament-day availability. Confirm important restrictions against https://playriftbound.com/en-us/rules-hub/.
 
-- Inventory data remains in the same browser localStorage key `riftvault-local-v1`. Phone and desktop do not automatically sync.
-- Do not delete site data. Save JSON backups before updating. Updating website files does not intentionally rewrite inventory quantities or decks.
-- Daily TCGplayer market estimates from RiftHunt are not instant sale prices. Exact printing prices require a live feed; `N/A` indicates no verified matching quote. No Bilgewater price is claimed to be live; comparison links remain.
-- Browser camera OCR and foil assessment are experimental; verify physical scans on your own phone.
-- The banned list is a dated reference; check official tournament rules for changes.
-- RiftVault is an unofficial fan companion and is not affiliated with Riot Games.
+## Preserving your collection
+
+This version retains `localStorage` key `riftvault-local-v1` for inventory and deck assignments. Updating files under the same website/origin should preserve it. A new browser, an incognito window or cleared site data may contain no collection; restore your JSON file in those cases. This version does **not** sync collection data between phone and desktop.
+
+## Testing and limitations
+
+- Syntax validation passed for JavaScript and Python.
+- Browser-interaction simulations passed at widths 320, 390, 768 and 1100px: new homepage, switching overnumbered images, red/blue counter scoring and Undo, official snapshot validation, Jinx TXT parsing (60 cards), and Smart Scan Verification preventing an automatic add until confirmation.
+- Python official-source parser passed fixture checks (12 Standard + 13 2v2 bans). Real scheduled runs require the workflow to be installed and enabled on your GitHub repository.
+- **Not verified in a real phone browser here:** Samsung camera OCR/foil detection, an actual scheduled GitHub job, live artwork/CDN pricing, and IndexedDB restore/cloud folder functionality. Please test with a small sample and retain your exported backup.
+
+RiftVault is an unofficial personal-use fan application and is not affiliated with or endorsed by Riot Games.
