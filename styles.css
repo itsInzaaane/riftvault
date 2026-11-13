@@ -507,3 +507,32 @@ body{background:radial-gradient(circle at 90% 0%,#12447b1c,transparent 46%),#080
 .deck-alert-thumb img{width:100%;height:100%;object-fit:contain}
 .deck-alert-description{flex:1;min-width:0}.deck-alert-description strong{display:block;font-size:13px}.deck-alert-description span,.deck-alert-description small,.deck-alert-scanned small{display:block;color:#b1c3e2;font-size:11px}.deck-alert-scanned strong{display:block}
 @media(max-width:600px){.deck-alert-row{flex-wrap:wrap}.deck-alert-row .btn{margin-left:auto}.deck-ready-banner{align-items:flex-start}}
+
+/* Overnumbered / Signature artwork focus treatment for thumbnails and compact panels */
+.card-art img.art-focus-over,
+.inventory-thumb img.art-focus-over,
+.deck-entry-thumb img.art-focus-over,
+.thumb img.art-focus-over,
+.scan-thumb img.art-focus-over,
+.printing-choice img.art-focus-over,
+.rv-scan-verify-art img.art-focus-over,
+.modal .detail-image img.art-focus-over,
+.printing-detail-art img.art-focus-over,
+.deck-alert-thumb img.art-focus-over,
+.rv-home-scan-pic img.art-focus-over{
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  object-fit:cover;
+  object-position:center 22%;
+  transform:scale(1.10);
+}
+.card-art img.art-focus-over{object-position:center 20%;transform:scale(1.12)}
+.inventory-thumb img.art-focus-over,.deck-entry-thumb img.art-focus-over,.thumb img.art-focus-over,.scan-thumb img.art-focus-over,.deck-alert-thumb img.art-focus-over{object-position:center 21%;transform:scale(1.11)}
+.printing-choice img.art-focus-over,.rv-scan-verify-art img.art-focus-over,.modal .detail-image img.art-focus-over,.printing-detail-art img.art-focus-over{object-position:center 18%;transform:scale(1.13)}
+@media(max-width:700px){
+  .card-art img.art-focus-over{object-position:center 18%;transform:scale(1.14)}
+  .inventory-thumb img.art-focus-over,.deck-entry-thumb img.art-focus-over,.thumb img.art-focus-over,.scan-thumb img.art-focus-over,.deck-alert-thumb img.art-focus-over{object-position:center 19%;transform:scale(1.12)}
+  .printing-choice img.art-focus-over,.rv-scan-verify-art img.art-focus-over,.modal .detail-image img.art-focus-over,.printing-detail-art img.art-focus-over{object-position:center 16%;transform:scale(1.15)}
+}

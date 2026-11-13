@@ -394,7 +394,7 @@ function locationSummary(name){const rows=[];const matchingIds=new Set(printings
 function findDeck(id){return state.decks.find(d=>d.id===id);}
 function setTab(tab){if(scanner.running||scanner.starting)stopScanner();ui.tab=tab;ui.deckId=null;ui.modal=null;render();window.scrollTo(0,0);}
 function download(name,content,type){let blob=new Blob([content],{type:type||'application/octet-stream'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function cardArt(p,cl=''){return p&&p.imageUrl?`<img class="${cl}" loading="lazy" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)} card art" onerror="this.style.display='none'"/>`:`<span class="placeholder-art">✦</span>`;}
+function cardArt(p,cl=''){const focusClass=p&&(isOvernumberedPrinting(p)||isSignaturePrinting(p))?' art-focus-over':'';const imgClass=(cl||'')+focusClass;return p&&p.imageUrl?`<img class="${imgClass.trim()}" loading="lazy" src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)} card art" onerror="this.style.display='none'"/>`:`<span class="placeholder-art">✦</span>`;}
 function fmt(n){return new Intl.NumberFormat('en-US').format(n||0);}
 function shortDate(date){try{return new Date(date).toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return '';}}
 function statusNote(){return catalogReady?`${catalog.length.toLocaleString()} printings loaded`:`${catalog.length} starter printings • online catalogue pending`;}

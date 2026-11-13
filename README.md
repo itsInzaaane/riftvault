@@ -1,9 +1,16 @@
-# RiftVault v1.23 — Rarity-Based Auto Foil Scanner
+# RiftVault v1.25 — Overnumbered Art Focus Everywhere
 
 A mobile/desktop Riftbound collection companion built on your v1.20 Blue Shield Edition. Existing inventory, foil/alt/signature printings, rune assignment, set images, TCGplayer/RiftHunt market prices, Bilgewater links, banned labels, decks, OCR scanning, Rules Library and Excel/JSON downloads are retained.
 
 
-## New in v1.23: Rarity-based finish detection
+## New in v1.25: overnumbered art focus everywhere
+
+- The same upper-artwork crop is now applied anywhere compact overnumbered or signature card art appears: search results, inventory, deck thumbnails, detail panels, scanner verification and related small previews.
+- Full-screen artwork preview still shows the entire card, so zooming into a card remains unchanged.
+
+- Homepage featured overnumbered art now crops into the upper artwork area instead of showing too much of the lower frame/text box.
+- The featured-art image is enlarged and shifted upward on desktop and mobile so faces and torso artwork stay centred more like the highlighted red-box example.
+- The hero fade and shading masks were softened to reduce visible cutoff lines where the artwork blends into the blue homepage banner.
 
 After OCR identifies an **exact printing** (set + collector number, including `a`/`*`), RiftVault applies the following collector-aware finish policy:
 

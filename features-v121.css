@@ -2,11 +2,11 @@
    readable backup/source status and scan verification. */
 .rv-home{display:flex;flex-direction:column;gap:18px;max-width:1320px;margin:0 auto}
 .rv-home-hero{position:relative;min-height:240px;overflow:hidden;isolation:isolate;border:1px solid #3265ac;border-radius:20px;background:linear-gradient(115deg,#081a36,#0c294b);box-shadow:0 8px 24px #0005}
-.rv-home-art{position:absolute;inset:auto -8% -18% auto;height:134%;width:91%;object-fit:cover;object-position:center 58%;z-index:-2;pointer-events:none;
- /* Cover much more of the banner. The feathered image mask eliminates the hard left edge. */
- -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 13%,rgba(0,0,0,.65) 31%,#000 59%);
- mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 13%,rgba(0,0,0,.65) 31%,#000 59%)}
-.rv-home-shade{position:absolute;inset:0;background:linear-gradient(90deg,#081a36 0%,#081a36f7 19%,#081b36d9 35%,#081b3699 56%,#081b3638 78%,#081b3630 100%),linear-gradient(0deg,#071a2baa,transparent 63%);z-index:-1;pointer-events:none}
+.rv-home-art{position:absolute;right:-10%;bottom:-38%;height:170%;width:100%;object-fit:cover;object-position:center 34%;z-index:-2;pointer-events:none;transform:scale(1.04);transform-origin:center top;
+ /* Focus overnumbered hero art on the upper card artwork area while keeping the left fade soft. */
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.10) 10%,rgba(0,0,0,.56) 26%,rgba(0,0,0,.90) 45%,#000 60%),linear-gradient(180deg,rgba(0,0,0,.92) 0%,#000 24%,#000 100%);
+ mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.10) 10%,rgba(0,0,0,.56) 26%,rgba(0,0,0,.90) 45%,#000 60%),linear-gradient(180deg,rgba(0,0,0,.92) 0%,#000 24%,#000 100%)}
+.rv-home-shade{position:absolute;inset:0;background:linear-gradient(90deg,#081a36 0%,#081a36f7 20%,#081b36dd 35%,#081b36ad 52%,#081b3668 72%,#081b3635 100%),linear-gradient(0deg,#071a2bcc 0%,#071a2b7d 22%,transparent 64%),radial-gradient(circle at 82% 28%,rgba(8,27,54,.12) 0%,rgba(8,27,54,.34) 37%,rgba(8,27,54,.68) 72%,rgba(8,27,54,.88) 100%);z-index:-1;pointer-events:none}
 .rv-home-hero-inner{padding:25px 28px;max-width:800px}
 .rv-home-hero h2{font-size:clamp(23px,2.4vw,34px);line-height:1.18;letter-spacing:-.5px;margin:8px 0}
 .rv-home-hero p{font-size:13px;color:#c0d0e8;max-width:510px;margin:0 0 25px}
@@ -57,10 +57,10 @@
 .rv-scan-verify-body{display:flex;gap:13px;align-items:center;margin:13px 0}.rv-scan-verify-art{width:105px;flex:0 0 105px;max-height:145px;display:grid;place-items:center;overflow:hidden}.rv-scan-verify-art img{max-height:145px;max-width:100%;object-fit:contain}
 @media(max-width:700px){
  .rv-home-hero{min-height:217px;border-radius:17px}
- .rv-home-art{width:112%;height:138%;right:-25%;bottom:-24%;object-position:center 62%;
- -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 18%,rgba(0,0,0,.78) 48%,#000 72%);
- mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.15) 18%,rgba(0,0,0,.78) 48%,#000 72%)}
- .rv-home-shade{background:linear-gradient(90deg,#07192fff 0%,#07192ff2 31%,#081a31cc 54%,#081a3155 86%,#081a3145 100%),linear-gradient(0deg,#071a33c2,transparent 78%)}
+ .rv-home-art{width:124%;height:158%;right:-32%;bottom:-31%;object-position:center 32%;transform:scale(1.06);
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.10) 14%,rgba(0,0,0,.62) 34%,rgba(0,0,0,.90) 55%,#000 74%),linear-gradient(180deg,rgba(0,0,0,.95) 0%,#000 24%,#000 100%);
+ mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.10) 14%,rgba(0,0,0,.62) 34%,rgba(0,0,0,.90) 55%,#000 74%),linear-gradient(180deg,rgba(0,0,0,.95) 0%,#000 24%,#000 100%)}
+ .rv-home-shade{background:linear-gradient(90deg,#07192fff 0%,#07192ff6 30%,#081a31db 49%,#081a31a8 67%,#081a3160 86%,#081a314a 100%),linear-gradient(0deg,#071a33cc 0%,#071a3382 26%,transparent 78%),radial-gradient(circle at 82% 24%,rgba(7,25,47,.14) 0%,rgba(7,25,47,.44) 42%,rgba(7,25,47,.76) 76%,rgba(7,25,47,.90) 100%)}
  .rv-home-hero-inner{padding:20px 17px}.rv-home-hero h2{font-size:22px}.rv-home-hero p{font-size:12px;max-width:245px;margin-bottom:23px}.rv-home-mini{max-width:100%;margin-bottom:11px}.rv-home-mini strong{font-size:16px}.rv-home-mini small{font-size:10px}.rv-home-mini>div{padding:0 7px}.rv-home-feature{font-size:9px}
  .rv-home-actions{gap:8px}.rv-home-action{min-height:79px;padding:8px 3px}.rv-home-action>span{font-size:23px}.rv-home-action strong{font-size:12px;text-align:center}
  .rv-home-columns{grid-template-columns:1fr;gap:12px}.rv-home-pane{padding:13px}.rv-home-pane h3{font-size:15px}.rv-home-status{grid-template-columns:1fr}
