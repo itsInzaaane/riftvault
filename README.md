@@ -1,8 +1,29 @@
-# RiftVault v1.22 — Screen-Filling Counter & Refined Hero Artwork
+# RiftVault v1.23 — Rarity-Based Auto Foil Scanner
 
 A mobile/desktop Riftbound collection companion built on your v1.20 Blue Shield Edition. Existing inventory, foil/alt/signature printings, rune assignment, set images, TCGplayer/RiftHunt market prices, Bilgewater links, banned labels, decks, OCR scanning, Rules Library and Excel/JSON downloads are retained.
 
-## Refined in v1.22
+
+## New in v1.23: Rarity-based finish detection
+
+After OCR identifies an **exact printing** (set + collector number, including `a`/`*`), RiftVault applies the following collector-aware finish policy:
+
+| Physical printing | When scanned in Smart mode |
+| --- | --- |
+| Standard booster Rare / Epic from Origins, Spiritforged, Unleashed, Vendetta or Radiance | **Foil** assigned automatically |
+| Alternate Art / Showcase / Overnumbered / Signed / Ultimate | **Foil** assigned automatically |
+| Booster Common / Uncommon | Finish selection **required**; camera reflections are only a hint |
+| Standard/basic Rune | Finish selection **required** (Normal or Foil) |
+| Alternate-Art Rune (`a` suffix) | **Foil** assigned automatically |
+| Proving Grounds starter printings (`OGS`) | **Non-foil** assigned automatically |
+| Other promotional / unverified products | Finish selection **required**; do not guess from rarity or price-feed availability |
+
+RiftVault only auto-assigns a fixed finish when a printing is identified. Low-confidence OCR and sensitive collector-number variants still trigger **Smart Scan Verification** first. If the initial OCR drops an alternate-art or Signature marker, confirm the printing before adding. **In Smart mode, Commons, Uncommons and basic Runes always require confirmation**, even if the camera suggests a finish. In Manual mode, your selected finish is used on flexible printings; a known fixed finish still takes precedence.
+
+The add-to-Bulk selectors also respect known fixed-finish rules. The app does **not** silently rewrite existing non-foil Rare/Epic inventory or edit previously saved deck allocations; review older entries manually if they were captured under the wrong finish. Some ready-made decks and special products can have different foil conventions, and a card's printed code may not identify the product in which it was acquired. For those cards, verify the actual finish and consider using a separate product-specific printing if available.
+
+**Rule source:** Riot's published [Collectability in Riftbound: Origins](https://playriftbound.com/en-us/news/announcements/collectability-in-riftbound-origins/) explains the booster foil slot and that booster Rares and Epics are foil. The product-specific starter exception is supported by [Riftbound foil guide](https://riftbound.org/learn/cards/foils). Real camera performance and every promotional printing still require verification.
+
+## Retained from v1.22
 
 - **Mobile Point Counter uses available screen height:** The two red/blue halves expand evenly to fill the screen above the existing bottom navigation, with bigger scoring controls. The display adapts as the browser chrome or phone height changes; it scrolls rather than hiding controls on unusually short devices.
 - **Homepage artwork is larger and lower:** The single changing Overnumbered card art is scaled up, positioned lower, and feathered with a broad image alpha mask so there is no visible vertical cut-off. The left-side text retains a readable dark gradient. Applies to phone and desktop.
@@ -37,6 +58,7 @@ This version retains `localStorage` key `riftvault-local-v1` for inventory and d
 ## Testing and limitations
 
 - Syntax validation passed for JavaScript and Python.
+- v1.23 automated browser tests covered 12 rarity/printing cases, including OGN/SFD/RAD foil Rares/Epics, flexible Commons/Uncommons/Runes, alternate-art Runes, foil Signature overnumbered, non-foil OGS starters and unknown promotional cards. A simulated OCR loop verified Rare → Foil inventory entry and Common → finish confirmation before counting. Tested at 320px, 390px and 1100px with no page-script errors or horizontal overflow.
 - Browser-interaction simulations passed at widths 320, 390, 768 and 1100px: new homepage, switching overnumbered images, red/blue counter scoring and Undo, official snapshot validation, Jinx TXT parsing (60 cards), and Smart Scan Verification preventing an automatic add until confirmation.
 - Python official-source parser passed fixture checks (12 Standard + 13 2v2 bans). Real scheduled runs require the workflow to be installed and enabled on your GitHub repository.
 - **Not verified in a real phone browser here:** Samsung camera OCR/foil detection, an actual scheduled GitHub job, live artwork/CDN pricing, and IndexedDB restore/cloud folder functionality. Please test with a small sample and retain your exported backup.

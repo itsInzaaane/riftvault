@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "RiftVault \u2014 Riftbound Collection Manager",
+  "name": "RiftVault — Riftbound Collection Manager",
   "short_name": "RiftVault",
-  "description": "RiftVault inventory, runes from any set, editable deck printings, OCR, foil assessment and daily card pricing.",
+  "description": "RiftVault collection inventory, Rune and deck assignments, rarity-aware OCR foil selection, backup and card pricing.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
