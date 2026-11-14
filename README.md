@@ -1,7 +1,18 @@
-# RiftVault v1.25 — Overnumbered Art Focus Everywhere
+# RiftVault v1.26 — Manual Multi-Copy Entry
 
 A mobile/desktop Riftbound collection companion built on your v1.20 Blue Shield Edition. Existing inventory, foil/alt/signature printings, rune assignment, set images, TCGplayer/RiftHunt market prices, Bilgewater links, banned labels, decks, OCR scanning, Rules Library and Excel/JSON downloads are retained.
 
+
+
+## New in v1.26: manual multi-copy entry
+
+- Auto Scanner → Manual Card Entry includes a **How many copies?** field (1–999, defaults to 1).
+- Enter a printed collector code, quantity, then tap **Identify & add to Bulk**. Known foil-only cards are added automatically; flexible Common/Uncommon/Rune finishes still require confirmation.
+- Copies are added as one transaction with one scan-history entry and a +N confirmation.
+- Undo removes the **entire batch** if all its copies remain available in Bulk; if some copies were moved into decks or storage, Undo explains why it cannot proceed.
+- Printing/foil correction for a batch changes the entire batch to keep the recorded history consistent.
+- Recent Scans and scan history show the quantity, and CSV/Excel exports include a Copies column.
+- All v1.25 layout, hero artwork, scanner, rules, decks, pricing and backup functionality is retained.
 
 ## New in v1.25: overnumbered art focus everywhere
 

@@ -536,3 +536,11 @@ body{background:radial-gradient(circle at 90% 0%,#12447b1c,transparent 46%),#080
   .inventory-thumb img.art-focus-over,.deck-entry-thumb img.art-focus-over,.thumb img.art-focus-over,.scan-thumb img.art-focus-over,.deck-alert-thumb img.art-focus-over{object-position:center 19%;transform:scale(1.12)}
   .printing-choice img.art-focus-over,.rv-scan-verify-art img.art-focus-over,.modal .detail-image img.art-focus-over,.printing-detail-art img.art-focus-over{object-position:center 16%;transform:scale(1.15)}
 }
+
+/* v1.26 — Scanner manual multi-copy entry */
+.manual-code-panel .manual-entry-fields{display:grid;grid-template-columns:minmax(0,1fr) 135px auto;gap:12px;align-items:end;margin-top:14px}
+.manual-code-panel .manual-entry-fields .form-field{margin:0;min-width:0}
+.manual-code-panel .manual-entry-fields .input{min-width:0;width:100%;font-size:15px;min-height:45px}
+.manual-code-panel .manual-entry-fields .btn{min-height:45px;white-space:normal;text-align:center}
+@media(max-width:760px){.manual-code-panel .manual-entry-fields{grid-template-columns:minmax(0,1fr) 112px}.manual-code-panel .manual-entry-fields .btn{grid-column:1/-1;width:100%}}
+@media(max-width:355px){.manual-code-panel .manual-entry-fields{grid-template-columns:1fr}.manual-code-panel .manual-entry-fields .btn{grid-column:1}.manual-code-panel .manual-entry-fields .form-field{width:100%}}

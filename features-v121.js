@@ -206,13 +206,13 @@ renderDeckDetail=function(deck){let html=oldDeckDetail(deck);if(!html.includes('
 // Smart Scan Verification for potentially ambiguous OCR reads. Other preexisting
 // artwork and foil confirmation steps remain in place.
 const baseCommitScan=commitScan;
-commitScan=function(card,finish,fp,source='manual',detectedCode=''){
+commitScan=function(card,finish,fp,source='manual',detectedCode='',quantity=1){
  const confidence=Number(scanner.lastOcrConfidence||100);
  const imageKnown=!!card.imageUrl;
  const reviewRequired=!!document.getElementById('scan-review')&&source!=='verified'&&source!=='typed'&&source!=='confirmed'&&(
    (source==='auto'||source==='catalogue'||source==='manual')&&(confidence<78||!imageKnown||card.isSignature||card.isOvernumbered));
- if(reviewRequired){scanner.pending={reviewType:'verify',card,finish,fp,detectedCode,source,confidence};scanner.latchedCode=detectedCode||normalizedCode(card.code);updateScanUI();setScanStatus('Verify the card image and collector code before adding','● Confirm identification');return;}
- baseCommitScan(card,finish,fp,source,detectedCode);
+ if(reviewRequired){scanner.pending={reviewType:'verify',card,finish,fp,detectedCode,source,confidence,quantity};scanner.latchedCode=detectedCode||normalizedCode(card.code);updateScanUI();setScanStatus('Verify the card image and collector code before adding','● Confirm identification');return;}
+ baseCommitScan(card,finish,fp,source,detectedCode,quantity);
 };
 const oldScanStatus=updateScanUI;
 updateScanUI=function(){oldScanStatus();if(scanner.pending?.reviewType!=='verify')return;
@@ -241,7 +241,7 @@ document.addEventListener('click',async event=>{
   else{const found=(await listSnapshots()).find(x=>x.id===id);if(found){download('RiftVault-Snapshot-'+found.at.slice(0,10)+'-'+id+'.json',found.payload,'application/json');toast('Backup exported. Keep it outside your browser.');}}return;
  }
  if(action==='backup-link-folder'){try{await chooseBackupFolder();}catch(e){toast('Backup folder not linked: '+e.message,true);}return;}
- if(action==='scan-verify-accept'){const p=scanner.pending;if(p?.reviewType==='verify'){scanner.pending=null;baseCommitScan(p.card,p.finish,p.fp,'verified',p.detectedCode);}return;}
+ if(action==='scan-verify-accept'){const p=scanner.pending;if(p?.reviewType==='verify'){scanner.pending=null;baseCommitScan(p.card,p.finish,p.fp,p.source==='typed'?'typed':'verified',p.detectedCode,p.quantity||1);}return;}
  if(action==='scan-verify-correct'){const p=scanner.pending;if(p?.reviewType==='verify'){const siblings=siblingPrintings(p.card);if(siblings.length>1){scanner.pending={...p,reviewType:'printing',choices:siblings};updateScanUI();}else toast('Only one printing found. Check the code manually if this is wrong.',true);}return;}
 });
 document.addEventListener('change',event=>{if(event.target?.id==='counter-mode'){

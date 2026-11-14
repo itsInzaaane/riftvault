@@ -777,11 +777,11 @@ function renderRecentScans(){
   const info=a.key?unpackKey(a.key):{id:'',finish:'Normal'};
   const card=getMeta(info.id),finish=info.finish;
   const changeTo=finish==='Foil'?'Non-foil':'Foil';
-  const canEdit=!!a.key&&bulkQty(a.key)>0;
+  const canEdit=!!a.key&&bulkQty(a.key)>=(a.qty||1);
   return `<div class="scan-history-item">
     ${scanThumbnail(a)}
     <div class="item-main">
-      <strong>${escapeHtml(card.name)}</strong>
+      <strong>${escapeHtml(card.name)}${(a.qty||1)>1?' · ×'+a.qty+' copies':''}</strong>
       <small>${escapeHtml(card.code)} · ${escapeHtml(finish==='Foil'?'Foil':'Non-foil')}${card.isAltArt?' · Alt art':''} · ${escapeHtml(new Date(a.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}</small>
       <div class="row wrap mt8 scan-history-buttons">
         <button class="btn btn-small btn-ghost" data-action="correct-scan-printing" data-activity="${escapeHtml(a.id)}" ${canEdit?'':'disabled'}>↔ Artwork</button>
@@ -814,19 +814,19 @@ else if(ui.modal.type==='correct-printing'){
 }
 root.innerHTML=html;}
 
-function correctPrintingOne(oldKey,newId,activityId=null){
+function correctPrintingOne(oldKey,newId,activityId=null,quantity=1){
  const old=unpackKey(oldKey),source=getMeta(old.id),target=getMeta(newId);
- if(!target?.id||!source?.id||normalizeName(source.name)!==normalizeName(target.name)||source.set!==target.set||bulkQty(oldKey)<1)return false;
+ if(!target?.id||!source?.id||normalizeName(source.name)!==normalizeName(target.name)||source.set!==target.set||!Number.isInteger(quantity)||quantity<1||bulkQty(oldKey)<quantity)return false;
  const targetFinish=knownPrintingFinish(target)||old.finish;
  const targetKey=keyFor(target.id,targetFinish);
  if(targetKey===oldKey)return false;
- state.stock[oldKey]=ownedQty(oldKey)-1;
+ state.stock[oldKey]=ownedQty(oldKey)-quantity;
  if(!state.stock[oldKey])delete state.stock[oldKey];
- state.stock[targetKey]=ownedQty(targetKey)+1;
+ state.stock[targetKey]=ownedQty(targetKey)+quantity;
  state.printings[target.id]=createMeta(target);
  let activity=activityId?state.activity.find(x=>x.id===activityId&&x.kind==='scan'):null;
- if(activity){activity.key=targetKey;activity.message=`Scanned ${target.name} (${target.code})${target.isAltArt?' [Alternate Art]':''} • ${targetFinish==='Foil'?'Foil':'Non-foil'} [printing corrected]`;}
- logActivity(`Corrected 1 × ${source.name}: ${source.code} → ${target.code}`,targetKey,'correction');
+ if(activity){activity.key=targetKey;activity.message=`Scanned ${quantity} × ${target.name} (${target.code})${target.isAltArt?' [Alternate Art]':''} • ${targetFinish==='Foil'?'Foil':'Non-foil'} [printing corrected]`;}
+ logActivity(`Corrected ${quantity} × ${source.name}: ${source.code} → ${target.code}`,targetKey,'correction');
  save();return true;
 }
 function showModal(type,extra={}){ui.modal={type,...extra};renderModal();}
@@ -855,9 +855,9 @@ function updateScanUI(){const start=document.getElementById('scan-start'),stop=d
  const p=scanner.pending;
  if(!p){review.innerHTML='';}
  else if(p.reviewType==='printing'){
-  review.innerHTML=`<section class="finish-review" role="group" aria-label="Confirm artwork printing"><div class="eyebrow">CHECK PRINTING</div><h3>${escapeHtml(p.card.name)}</h3><p class="small">OCR read ${escapeHtml(p.card.code)}, but the small letter after the number can be missed. Look at the bottom-left printed code and choose the matching artwork.</p><div class="printing-choices">${p.choices.map(card=>`<button class="printing-choice" data-action="choose-printing" data-id="${escapeHtml(card.id)}">${cardArt(card)}<span><strong>${escapeHtml(card.code)}</strong><small>${escapeHtml(printingLabel(card))} · ${escapeHtml(card.rarity)}</small></span></button>`).join('')}</div><button class="btn btn-ghost btn-small mt12" data-action="finish-skip">Skip card</button></section>`;
+  review.innerHTML=`<section class="finish-review" role="group" aria-label="Confirm artwork printing"><div class="eyebrow">CHECK PRINTING${p.quantity>1?' · '+p.quantity+' COPIES':''}</div><h3>${escapeHtml(p.card.name)}</h3><p class="small">OCR read ${escapeHtml(p.card.code)}, but the small letter after the number can be missed. Look at the bottom-left printed code and choose the matching artwork.</p><div class="printing-choices">${p.choices.map(card=>`<button class="printing-choice" data-action="choose-printing" data-id="${escapeHtml(card.id)}">${cardArt(card)}<span><strong>${escapeHtml(card.code)}</strong><small>${escapeHtml(printingLabel(card))} · ${escapeHtml(card.rarity)}</small></span></button>`).join('')}</div><button class="btn btn-ghost btn-small mt12" data-action="finish-skip">Skip card</button></section>`;
  }else{
-  review.innerHTML=`<section class="finish-review" role="group" aria-label="Confirm scanned card finish"><div class="eyebrow">FINISH NEEDS CONFIRMATION</div><h3>${escapeHtml(p.card.name)}</h3><p class="muted small">${escapeHtml(p.card.code)}${p.card.isAltArt?' · Alternate Art':''} • ${escapeHtml(p.reason)}</p><p class="small"><strong>Reflection hint:</strong> ${escapeHtml(p.guess==='Foil'?'Foil':'Non-foil')} · Confirm the actual finish before adding. The card will not be counted until you choose.</p><div class="row wrap"><button class="btn btn-primary" data-action="finish-confirm-normal">✓ Non-foil</button><button class="btn btn-green-outline" data-action="finish-confirm-foil">✦ Foil</button><button class="btn btn-ghost" data-action="finish-skip">Skip card</button></div></section>`;
+  review.innerHTML=`<section class="finish-review" role="group" aria-label="Confirm scanned card finish"><div class="eyebrow">FINISH NEEDS CONFIRMATION${p.quantity>1?' · '+p.quantity+' COPIES':''}</div><h3>${escapeHtml(p.card.name)}</h3><p class="muted small">${escapeHtml(p.card.code)}${p.card.isAltArt?' · Alternate Art':''} • ${escapeHtml(p.reason)}</p><p class="small"><strong>Reflection hint:</strong> ${escapeHtml(p.guess==='Foil'?'Foil':'Non-foil')} · Confirm the actual finish before adding. The card will not be counted until you choose.</p><div class="row wrap"><button class="btn btn-primary" data-action="finish-confirm-normal">✓ Non-foil</button><button class="btn btn-green-outline" data-action="finish-confirm-foil">✦ Foil</button><button class="btn btn-ghost" data-action="finish-skip">Skip card</button></div></section>`;
  }
 }}
 function loadScript(url){return new Promise((resolve,reject)=>{if(window.Tesseract)return resolve();let script=document.createElement('script');script.src=url;script.onload=()=>window.Tesseract?resolve():reject(new Error('OCR library did not initialise'));script.onerror=()=>reject(new Error('OCR library download failed; internet connection required'));document.head.appendChild(script);});}
@@ -958,21 +958,29 @@ if(shimmer>.22&&vivid>.026&&meanBright>.012&&motion>.026)return {finish:'Foil',c
 // Low-shimmer evidence can suggest normal, but should not auto-classify: a foil card
 // under flat lighting, a sleeve or an unsteady camera may appear identical to normal.
 return {finish:null,confidence:'uncertain',guess:shimmer>.115&&vivid>.008?'Foil':'Normal',reason:shimmer>.115?'Possible foil reflections; please verify':'Foil reflections not conclusive; choose the finish'};}
-function showScanSuccess(card,finish){
+function showScanSuccess(card,finish,quantity=1){
  const box=document.getElementById('camera-box'),last=document.getElementById('scan-last');
- if(last){last.textContent=`✓ ${card.name} • ${card.code} ${card.isAltArt?'• Alternate Art ':''}• ${finish==='Foil'?'Foil':'Non-foil'} added to Bulk`;last.classList.add('is-success');}
+ if(last){last.textContent=`✓ ${card.name} • ${card.code} ${card.isAltArt?'• Alternate Art ':''}• ${finish==='Foil'?'Foil':'Non-foil'} • +${quantity} ${quantity===1?'copy':'copies'} added to Bulk`;last.classList.add('is-success');}
  if(box){box.classList.remove('scan-succeeded');void box.offsetWidth;box.classList.add('scan-succeeded');}
  if(scanner.flashTimeout)clearTimeout(scanner.flashTimeout);
  scanner.flashTimeout=setTimeout(()=>box?.classList.remove('scan-succeeded'),670);
 }
-function commitScan(card,finish,fp,source='manual',detectedCode=''){
+function commitScan(card,finish,fp,source='manual',detectedCode='',quantity=1){
  const requiredFinish=knownPrintingFinish(card);if(requiredFinish)finish=requiredFinish;
- if(!['Foil','Normal'].includes(finish))return;
- const key=keyFor(card.id,finish);addBulkByKey(key,1);const a=state.activity[0];
- recentVisitIds.add(a.id);a.kind='scan';a.session=scanner.sessionId||'legacy';a.message=`Scanned ${card.name} (${card.code})${card.isAltArt?' [Alternate Art]':''} • ${finish==='Foil'?'Foil':'Non-foil'}${source==='auto'?' [auto]':''}`;
- save();scanner.sessionCount++;scanner.latchedCode=detectedCode||scanner.pending?.detectedCode||normalizedCode(card.code);scanner.acceptedHash=fp||scanner.acceptedHash;
+ if(!['Foil','Normal'].includes(finish)||!Number.isInteger(quantity)||quantity<1||quantity>999)return;
+ const key=keyFor(card.id,finish);
+ // A manual batch produces one inventory change and one reversible scan record.
+ addBulkByKey(key,quantity);const a=state.activity[0];
+ recentVisitIds.add(a.id);a.kind='scan';a.qty=quantity;a.source=source;
+ a.session=source==='typed'?'manual-'+a.id:(scanner.sessionId||'legacy');
+ a.message=`Scanned ${quantity} × ${card.name} (${card.code})${card.isAltArt?' [Alternate Art]':''} • ${finish==='Foil'?'Foil':'Non-foil'}${source==='auto'?' [auto]':''}`;
+ save();scanner.sessionCount+=quantity;scanner.latchedCode=detectedCode||scanner.pending?.detectedCode||normalizedCode(card.code);scanner.acceptedHash=fp||scanner.acceptedHash;
  scanner.pending=null;scanner.foilCode=null;scanner.foilSamples=[];
- beep();showScanSuccess(card,finish);updateScanUI();setScanStatus(`✓ ${card.name} captured. Show the next card.`,'● Card captured');
+ if(source==='typed'){
+  const codeInput=document.getElementById('scan-collector-input');if(codeInput)codeInput.value='';
+  const qtyInput=document.getElementById('scan-manual-qty');if(qtyInput)qtyInput.value='1';
+ }
+ beep();showScanSuccess(card,finish,quantity);updateScanUI();setScanStatus(`✓ ${quantity} ${quantity===1?'copy':'copies'} of ${card.name} added to Bulk.`,'● Card captured');
  notifyDecksAfterScan(card,finish);
 }
 async function scanLoop(token){
@@ -1087,13 +1095,17 @@ document.addEventListener('click',async event=>{const nav=event.target.closest('
  case'refresh-catalog':if(scanner.running||scanner.starting)await stopScanner();toast('Refreshing card catalogue…');await loadCatalogue();break;
  case'close-modal':case'close-modal-backdrop':closeModal();break;
  case'scan-code-lookup':{
+  const rawQuantity=String(document.getElementById('scan-manual-qty')?.value||'').trim();
+  const quantity=Number(rawQuantity);
+  if(!rawQuantity||!Number.isInteger(quantity)||quantity<1||quantity>999){toast('How many copies? Enter a whole number from 1 to 999.',true);break;}
+  if(scanner.pending){toast('Finish or skip the current card confirmation first.',true);break;}
   const typed=String(document.getElementById('scan-collector-input')?.value||'').trim();
+  if(!typed){toast('Enter a collector code first.',true);break;}
   const card=codeIndex.get(normalizedCode(typed))||matchOCR(typed);
   if(!card){toast('Code not found. Check the printed set and letter, or refresh the card catalogue.',true);break;}
-  scanner.pending=null;
   const finish=knownPrintingFinish(card);
-  if(finish)commitScan(card,finish,null,'typed',normalizedCode(card.code));
-  else {scanner.pending={card,reviewType:'finish',guess:'Normal',reason:'Select the correct finish for this printing',fp:null,detectedCode:normalizedCode(card.code)};updateScanUI();setScanStatus('Select foil or normal finish','● Finish confirmation');}
+  if(finish)commitScan(card,finish,null,'typed',normalizedCode(card.code),quantity);
+  else {scanner.pending={card,reviewType:'finish',guess:'Normal',reason:'Select the correct finish for this printing',fp:null,detectedCode:normalizedCode(card.code),quantity,source:'typed'};updateScanUI();setScanStatus(`Confirm finish for ${quantity} ${quantity===1?'copy':'copies'}`,'● Finish confirmation');}
   break;
  }
  case'scan-start':await startScanner();break;
@@ -1102,17 +1114,17 @@ document.addEventListener('click',async event=>{const nav=event.target.closest('
   const p=scanner.pending,choice=p?.choices?.find(x=>x.id===button.dataset.id);
   if(!p||p.reviewType!=='printing'||!choice)break;
   const finish=knownPrintingFinish(choice)||(scanner.finishMode==='manual'?scanner.finish:null);
-  if(finish){commitScan(choice,finish,p.fp,'confirmed',p.detectedCode);break;}
+  if(finish){commitScan(choice,finish,p.fp,p.source==='typed'?'typed':'confirmed',p.detectedCode,p.quantity||1);break;}
   const result=evaluateFoilSamples(scanner.foilSamples);
-  scanner.pending={card:choice,reviewType:'finish',guess:result.guess,reason:'Artwork confirmed. Please confirm foil finish.',fp:p.fp,detectedCode:p.detectedCode};
+  scanner.pending={card:choice,reviewType:'finish',guess:result.guess,reason:'Artwork confirmed. Please confirm foil finish.',fp:p.fp,detectedCode:p.detectedCode,quantity:p.quantity||1,source:p.source};
   updateScanUI();setScanStatus('Choose the finish for '+choice.code,'● Finish confirmation');break;
  }
- case'finish-confirm-foil':case'finish-confirm-normal':{const p=scanner.pending;if(!p||p.reviewType==='printing')break;commitScan(p.card,action==='finish-confirm-foil'?'Foil':'Normal',p.fp,'confirmed',p.detectedCode);break;}
+ case'finish-confirm-foil':case'finish-confirm-normal':{const p=scanner.pending;if(!p||p.reviewType==='printing')break;commitScan(p.card,action==='finish-confirm-foil'?'Foil':'Normal',p.fp,p.source==='typed'?'typed':'confirmed',p.detectedCode,p.quantity||1);break;}
  case'finish-skip':{if(scanner.pending){scanner.pending=null;scanner.foilCode=null;scanner.foilSamples=[];updateScanUI();setScanStatus('Card skipped; remove it before continuing.','● Skipped');}break;}
  case'scan-next':scanner.latchedCode=null;scanner.lastCandidate=null;scanner.stable=0;scanner.acceptedHash=null;scanner.missed=0;scanner.foilCode=null;scanner.foilSamples=[];setScanStatus('Ready for next identical card. Present it now.','● Ready');break;
  case'correct-scan-printing':{
   const a=state.activity.find(a=>a.id===button.dataset.activity&&a.kind==='scan');
-  if(!a?.key||bulkQty(a.key)<1){toast('This scan is no longer in Bulk.',true);break;}
+  if(!a?.key||bulkQty(a.key)<(a.qty||1)){toast('The full scanned batch is no longer in Bulk.',true);break;}
   showModal('correct-printing',{key:a.key,activityId:a.id});break;
  }
  case'correct-stock-printing':{
@@ -1122,11 +1134,12 @@ document.addEventListener('click',async event=>{const nav=event.target.closest('
  case'save-correct-printing':{
   const m=ui.modal;
   if(m?.type!=='correct-printing'||!m.key)break;
-  if(!correctPrintingOne(m.key,button.dataset.id,m.activityId)){toast('Unable to change printing. Check available Bulk quantity.',true);break;}
+  const activity=m.activityId?state.activity.find(a=>a.id===m.activityId&&a.kind==='scan'):null;
+  if(!correctPrintingOne(m.key,button.dataset.id,m.activityId,activity?.qty||1)){toast('Unable to change printing. The full recorded batch must still be in Bulk.',true);break;}
   closeModal();render();toast('Printing corrected. Reference price and artwork will now use the selected code.');break;
  }
- case'correct-scan-finish':{const a=state.activity.find(a=>a.id===button.dataset.activity&&a.kind==='scan');if(a?.key&&knownPrintingFinish(getMeta(unpackKey(a.key).id))){toast('This printing has a fixed finish: '+knownPrintingFinish(getMeta(unpackKey(a.key).id))+'.',true);break;}if(!a||!a.key||bulkQty(a.key)<1){toast('This copy is no longer available in Bulk for correction.',true);break;}const old=a.key,info=unpackKey(old),newFinish=info.finish==='Foil'?'Normal':'Foil',next=keyFor(info.id,newFinish);state.stock[old]=ownedQty(old)-1;if(state.stock[old]===0)delete state.stock[old];state.stock[next]=ownedQty(next)+1;a.key=next;a.message=`Scanned ${getMeta(info.id).name} (${getMeta(info.id).code}) • ${newFinish==='Foil'?'Foil':'Non-foil'} [corrected]`;save();if(ui.tab==='scan')updateScanUI();else render();toast('Finish corrected to '+(newFinish==='Foil'?'Foil':'Non-foil')+'.');break;}
- case'undo-scan':{const i=state.activity.findIndex(a=>a.id===button.dataset.activity&&a.kind==='scan');if(i<0)break;const a=state.activity[i];if(!a.key||bulkQty(a.key)<1){toast('Cannot undo: copy no longer in Bulk.',true);break;}state.stock[a.key]=ownedQty(a.key)-1;if(!state.stock[a.key])delete state.stock[a.key];state.activity.splice(i,1);recentVisitIds.delete(a.id);logActivity('Undid a scan of '+getMeta(unpackKey(a.key).id).name,null,'undo');save();if(ui.tab==='scan')updateScanUI();else render();toast('Scan undone.');break;}
+ case'correct-scan-finish':{const a=state.activity.find(a=>a.id===button.dataset.activity&&a.kind==='scan');if(a?.key&&knownPrintingFinish(getMeta(unpackKey(a.key).id))){toast('This printing has a fixed finish: '+knownPrintingFinish(getMeta(unpackKey(a.key).id))+'.',true);break;}const qty=a?.qty||1;if(!a||!a.key||bulkQty(a.key)<qty){toast('The full scanned batch must be in Bulk for correction.',true);break;}const old=a.key,info=unpackKey(old),newFinish=info.finish==='Foil'?'Normal':'Foil',next=keyFor(info.id,newFinish);state.stock[old]=ownedQty(old)-qty;if(state.stock[old]===0)delete state.stock[old];state.stock[next]=ownedQty(next)+qty;a.key=next;a.message=`Scanned ${qty} × ${getMeta(info.id).name} (${getMeta(info.id).code}) • ${newFinish==='Foil'?'Foil':'Non-foil'} [corrected]`;save();if(ui.tab==='scan')updateScanUI();else render();toast('Corrected '+qty+' '+(qty===1?'copy':'copies')+' to '+(newFinish==='Foil'?'Foil':'Non-foil')+'.');break;}
+ case'undo-scan':{const i=state.activity.findIndex(a=>a.id===button.dataset.activity&&a.kind==='scan');if(i<0)break;const a=state.activity[i];const qty=a.qty||1;if(!a.key||bulkQty(a.key)<qty){toast('Cannot undo: some copies from this batch are no longer in Bulk.',true);break;}state.stock[a.key]=ownedQty(a.key)-qty;if(!state.stock[a.key])delete state.stock[a.key];state.activity.splice(i,1);recentVisitIds.delete(a.id);logActivity('Undid '+qty+' × '+getMeta(unpackKey(a.key).id).name,null,'undo');save();if(ui.tab==='scan')updateScanUI();else render();toast('Undid '+qty+' '+(qty===1?'copy':'copies')+'.');break;}
  }});
 document.addEventListener('input',event=>{const t=event.target;if(t.id==='card-search'||t.id==='inventory-search'){if(t.id==='card-search')ui.query=t.value;else ui.inventoryQuery=t.value;const id=t.id,position=t.selectionStart;render();const e=document.getElementById(id);if(e){e.focus();try{e.setSelectionRange(position,position);}catch(_){}}}else if(t.id==='import-deck-text'){ui.importText=t.value;const b=document.querySelector('[data-action="save-import"]');if(b){const p=parseDeckText(ui.importText);b.disabled=!p.entries.length;b.textContent=(ui.modal?.into?'Replace requirements':'Create deck')+' · '+p.total+' cards';}}else if(t.id==='import-deck-name')ui.importName=t.value;else if(t.id==='add-card-name')ui.addCardQuery=t.value;else if(t.id==='add-card-qty')ui.addCardQuantity=Number(t.value);});
 document.addEventListener('change',async event=>{const t=event.target;if(t.id==='set-filter'){ui.setFilter=t.value;render();}else if(t.id==='owned-only'){ui.ownedOnly=t.checked;render();}else if(t.id==='deck-file'){const file=t.files?.[0];if(file){if(file.size>200000){toast('Decklist file is too large.',true);return;}ui.importText=await file.text();ui.importName=(file.name.replace(/\.txt$/i,'').trim()||ui.importName);renderModal();toast('TXT file loaded. Review the requirements, then create the deck.');}}else if(t.id==='restore-input'){await restoreJson(t.files?.[0]);t.value='';}else if(t.id==='add-card-section')ui.addCardSection=t.value;else if(t.id==='scan-finish')scanner.finish=t.value;else if(t.id==='scan-speed'){scanner.speed=t.value==='steady'?'steady':'fast';localStorage.setItem(SCAN_SPEED_KEY,scanner.speed);toast(scanner.speed==='fast'?'Fast recognition selected; please review scanned codes.':'Steady recognition selected; codes require two matching reads.');}else if(t.id==='scan-finish-mode'){scanner.finishMode=t.value==='manual'?'manual':'auto';const row=document.getElementById('scan-manual-finish');if(row)row.style.display=scanner.finishMode==='manual'?'':'none';scanner.foilSamples=[];scanner.foilCode=null;toast(scanner.finishMode==='auto'?'Automatic foil assessment enabled; uncertain finishes will need confirmation.':'Manual finish mode enabled.');}});
@@ -1179,12 +1192,12 @@ function scanActivityLabel(a){
  if(!a?.key)return a?.message||'Scan';
  const {id,finish}=unpackKey(a.key),p=getMeta(id);
  const corrected=/\[corrected\]/i.test(a.message||'')?' [corrected]':'';
- return `Scanned ${p.name} (${p.code}) • ${finish==='Foil'?'Foil':'Non-foil'}${corrected}`;
+ return `Scanned ${a.qty||1} × ${p.name} (${p.code}) • ${finish==='Foil'?'Foil':'Non-foil'}${corrected}`;
 }
-function renderScanHistory(){const scans=state.activity.filter(a=>a.kind==='scan').slice(0,200);return `<div class="row-between wrap mb24"><div><h2>Scanning history</h2><p class="muted small">Review and correct recorded scans. Undo works when the scanned copy is still in Bulk.</p></div><div class="row wrap"><span class="pill">${scans.length} recorded</span><button class="btn btn-ghost" data-action="history-export">↧ Export CSV</button></div></div>${backupReminder()}<div class="panel mb18"><div class="row-between wrap"><h3>Session review</h3><button class="btn btn-small btn-ghost" data-action="history-undo-session" ${!scans.length?'disabled':''}>Undo latest session</button></div><p class="muted small">A session groups scans between starting and stopping the camera. The batch undo will not run if any of its cards are no longer available in Bulk.</p></div><div class="panel">${scans.length?scans.map(a=>{const key=a.key,can=a.key&&bulkQty(a.key)>0;return `<div class="list-row scan-full-history-row">${scanThumbnail(a)}<div class="item-main"><strong>${escapeHtml(scanActivityLabel(a))}</strong><small>${escapeHtml(new Date(a.at).toLocaleString())} · ${escapeHtml(a.session?'Session '+String(a.session).slice(0,8):'Legacy scan')}</small></div><div class="row wrap"><button class="btn btn-small btn-ghost" data-action="correct-scan-printing" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>↔ Artwork</button><button class="btn btn-small btn-ghost" data-action="correct-scan-finish" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>↔ Finish</button><button class="btn btn-small btn-ghost" data-action="undo-scan" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>Undo</button></div></div>`}).join(''):`<div class="empty"><h3>No scans recorded yet</h3><p>Open Auto scanner to record your next batch.</p><button class="btn btn-primary" data-nav="scan">Open scanner</button></div>`}</div>`;}
+function renderScanHistory(){const scans=state.activity.filter(a=>a.kind==='scan').slice(0,200);return `<div class="row-between wrap mb24"><div><h2>Scanning history</h2><p class="muted small">Review and correct recorded scans. Undo works when the scanned copy is still in Bulk.</p></div><div class="row wrap"><span class="pill">${scans.length} recorded</span><button class="btn btn-ghost" data-action="history-export">↧ Export CSV</button></div></div>${backupReminder()}<div class="panel mb18"><div class="row-between wrap"><h3>Session review</h3><button class="btn btn-small btn-ghost" data-action="history-undo-session" ${!scans.length?'disabled':''}>Undo latest session</button></div><p class="muted small">A session groups scans between starting and stopping the camera. The batch undo will not run if any of its cards are no longer available in Bulk.</p></div><div class="panel">${scans.length?scans.map(a=>{const key=a.key,can=a.key&&bulkQty(a.key)>=(a.qty||1);return `<div class="list-row scan-full-history-row">${scanThumbnail(a)}<div class="item-main"><strong>${escapeHtml(scanActivityLabel(a))}</strong><small>${escapeHtml(new Date(a.at).toLocaleString())} · ${escapeHtml(a.session?'Session '+String(a.session).slice(0,8):'Legacy scan')}</small></div><div class="row wrap"><button class="btn btn-small btn-ghost" data-action="correct-scan-printing" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>↔ Artwork</button><button class="btn btn-small btn-ghost" data-action="correct-scan-finish" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>↔ Finish</button><button class="btn btn-small btn-ghost" data-action="undo-scan" data-activity="${escapeHtml(a.id)}" ${can?'':'disabled'}>Undo</button></div></div>`}).join(''):`<div class="empty"><h3>No scans recorded yet</h3><p>Open Auto scanner to record your next batch.</p><button class="btn btn-primary" data-nav="scan">Open scanner</button></div>`}</div>`;}
 function csvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"';}
-function exportHistoryCSV(){const rows=[['Date','Card','Set code','Finish','Session','Description'],...state.activity.filter(a=>a.kind==='scan').map(a=>[a.at,a.key?getMeta(unpackKey(a.key).id).name:'',a.key?getMeta(unpackKey(a.key).id).code:'',a.key?unpackKey(a.key).finish:'',a.session||'',scanActivityLabel(a)])];download('RiftVault-Scans-'+new Date().toISOString().slice(0,10)+'.csv','\uFEFF'+rows.map(r=>r.map(csvEscape).join(',')).join('\r\n'),'text/csv;charset=utf-8');}
-function undoLastSession(){const scans=state.activity.filter(a=>a.kind==='scan');if(!scans.length)return toast('No scan session to undo.',true);const latest=scans[0].session||scans[0].id;const list=scans.filter(a=>(a.session||a.id)===latest);const sums=new Map();for(const a of list)if(a.key)sums.set(a.key,(sums.get(a.key)||0)+1);for(const [k,q] of sums)if(bulkQty(k)<q)return toast('Cannot undo this session: some scanned copies were already moved or removed.',true);if(!confirm(`Undo all ${list.length} scan(s) from the latest session?`))return;for(const [k,q] of sums){state.stock[k]=ownedQty(k)-q;if(!state.stock[k])delete state.stock[k];}const ids=new Set(list.map(a=>a.id));for(const id of ids)recentVisitIds.delete(id);state.activity=state.activity.filter(a=>!ids.has(a.id));logActivity(`Undid ${list.length} scans from a session`,null,'undo');save();render();toast(`${list.length} scan(s) undone.`);}
+function exportHistoryCSV(){const rows=[['Date','Card','Set code','Finish','Copies','Session','Description'],...state.activity.filter(a=>a.kind==='scan').map(a=>[a.at,a.key?getMeta(unpackKey(a.key).id).name:'',a.key?getMeta(unpackKey(a.key).id).code:'',a.key?unpackKey(a.key).finish:'',a.qty||1,a.session||'',scanActivityLabel(a)])];download('RiftVault-Scans-'+new Date().toISOString().slice(0,10)+'.csv','\uFEFF'+rows.map(r=>r.map(csvEscape).join(',')).join('\r\n'),'text/csv;charset=utf-8');}
+function undoLastSession(){const scans=state.activity.filter(a=>a.kind==='scan');if(!scans.length)return toast('No scan session to undo.',true);const latest=scans[0].session||scans[0].id;const list=scans.filter(a=>(a.session||a.id)===latest);const sums=new Map();for(const a of list)if(a.key)sums.set(a.key,(sums.get(a.key)||0)+(a.qty||1));for(const [k,q] of sums)if(bulkQty(k)<q)return toast('Cannot undo this session: some scanned copies were already moved or removed.',true);const totalCopies=[...sums.values()].reduce((a,b)=>a+b,0);if(!confirm(`Undo ${totalCopies} ${totalCopies===1?'copy':'copies'} from ${list.length} scan ${list.length===1?'entry':'entries'}?`))return;for(const [k,q] of sums){state.stock[k]=ownedQty(k)-q;if(!state.stock[k])delete state.stock[k];}const ids=new Set(list.map(a=>a.id));for(const id of ids)recentVisitIds.delete(id);state.activity=state.activity.filter(a=>!ids.has(a.id));logActivity(`Undid ${totalCopies} copies from ${list.length} scan entries`,null,'undo');save();render();toast(`${totalCopies} ${totalCopies===1?'copy':'copies'} undone.`);}
 const _rvRenderOverview=renderOverview;
 renderOverview=function(){return _rvRenderOverview().replace('<div class="stats">',backupReminder()+priceSourceBlock()+'<div class="stats">').replace('ASSIGNED TO DECKS','ASSIGNED TO DECKS').replace('Across ${state.decks.length}', 'Across ${state.decks.length}');};
 const _rvRenderDeckDetail=renderDeckDetail;
@@ -1267,13 +1280,13 @@ exportExcel=function(){const curr='USD',source='TCGplayer market via RiftHunt (d
  const requirements=[['Deck','Section','Card name','Collector code','Required','Assigned','Unassigned requirement','Available Bulk','Other decks']];for(const d of state.decks)for(const en of d.entries)requirements.push([d.name,SECTION_LABEL[en.section],requirementName(en),en.code||'',en.required,entryAssigned(d,en),Math.max(0,en.required-entryAssigned(d,en)),entryBulk(en),entryElsewhere(en,d)]);
  const wishes=[['Card','Decks needing card','Unassigned deck requirements','Bulk','Total owned','Personal goal','Still missing','Unit estimate ('+curr+')','Cost estimate ('+curr+')']];for(const r of smartWishlist())wishes.push([r.name,[...r.decks].join(', '),r.openNeeded,r.bulk,r.owned,r.manual||'',r.short,r.quote?.amount??'',r.quote?r.quote.amount*r.short:'']);
  const decks=[['Deck','Required copies','Assigned copies','Could assign from Bulk','Missing after Bulk','Assigned value ('+curr+')','Priced copies','Unpriced copies','Legality basic issues']];for(const d of state.decks){const n=deckStats(d),b=d.entries.reduce((v,e)=>v+Math.min(Math.max(0,e.required-entryAssigned(d,e)),entryBulk(e)),0),value=deckPrice(d);decks.push([d.name,n.need,n.assigned,b,Math.max(0,n.need-n.assigned-b),value.priced?value.total:'',value.priced,value.unpriced,deckLegalReview(d).issues.join('; ')]);}
- const history=[['Timestamp','Card name','Card code','Finish','Session','Description']];for(const a of state.activity.filter(x=>x.kind==='scan'))history.push([a.at,a.key?getMeta(unpackKey(a.key).id).name:'',a.key?getMeta(unpackKey(a.key).id).code:'',a.key?unpackKey(a.key).finish:'',a.session||'',scanActivityLabel(a)]);
+ const history=[['Timestamp','Card name','Card code','Finish','Copies','Session','Description']];for(const a of state.activity.filter(x=>x.kind==='scan'))history.push([a.at,a.key?getMeta(unpackKey(a.key).id).name:'',a.key?getMeta(unpackKey(a.key).id).code:'',a.key?unpackKey(a.key).finish:'',a.qty||1,a.session||'',scanActivityLabel(a)]);
  const overview=[['RiftVault Collection Report','Value'],['Exported at',new Date().toISOString()],['Owned copies',totalOwned()],['Unique card names',uniqueOwned()],['Copies in Bulk',totalBulk()],['Copies assigned to decks',totalOwned()-totalBulk()-totalStorage()],['Copies in named storage',totalStorage()],['Saved decks',state.decks.length],['Missing wishlist copies',smartWishlist().reduce((a,r)=>a+r.short,0)],['Market source',source],['Currency',curr],['Latest feed update',priceState.fetchedAt||'Unavailable'],['Known collection market estimate',summary.priced?summary.total:'N/A'],['Priced copies',summary.priced],['Unpriced copies',summary.unpriced],[],['Notes','Ownership includes Bulk + Decks + Storage once each.'],['Notes','Reference prices are estimates, not guaranteed selling prices.'],['Notes','Unpriced values are excluded, not zero.'],['Notes','Auto price feed: https://rifthunt.com/api/'],['Notes','Daily TCGplayer market estimates; refresh on app open when cache is due'],['Notes','Card catalogue: https://github.com/slimtreble/Riftbound-card-data']];const sheets=[{name:'Summary',rows:overview},{name:'Inventory',rows:inventory},{name:'Locations',rows:locations},{name:'Decks',rows:decks},{name:'Deck requirements',rows:requirements},{name:'Wishlist',rows:wishes},{name:'Scan history',rows:history}];download('RiftVault-Inventory-'+new Date().toISOString().slice(0,10)+'.xlsx',xlsxBlob(sheets),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');toast('Excel exported: 7 sheets using TCGplayer daily market estimates.');};
 
 // Print-code fallback for cameras that cannot focus on miniature collector text.
 const scanViewBeforeCodeEntry=renderScan;
 renderScan=function(){return scanViewBeforeCodeEntry().replace('<div id="scan-review"',
- `<div class="panel manual-code-panel mt12 mb12"><div class="eyebrow">IF THE CAMERA CANNOT READ THE CODE</div><p class="muted small">Enter the printed collector code (for example OGN-042a or SFD-R02a). This still adds the exact physical printing, without taking a photo.</p><div class="row wrap"><input id="scan-collector-input" class="input" style="flex:1;min-width:145px" autocomplete="off" autocapitalize="characters" placeholder="OGN-042a / SFD-R02a" aria-label="Printed collector code"><button class="btn btn-ghost" data-action="scan-code-lookup">Identify code</button></div></div><div id="scan-review"`);
+ `<div class="panel manual-code-panel mt12 mb12"><div class="eyebrow">MANUAL CARD ENTRY</div><p class="muted small">Enter a collector code to add several identical copies in one step. Smart finish rules still apply.</p><div class="manual-entry-fields"><label class="form-field"><span>Collector code</span><input id="scan-collector-input" class="input" autocomplete="off" autocapitalize="characters" placeholder="OGN-042a / SFD-R02a" aria-label="Printed collector code"></label><label class="form-field"><span>How many copies?</span><input id="scan-manual-qty" class="input" type="number" inputmode="numeric" min="1" max="999" step="1" value="1" required aria-label="How many copies"></label><button class="btn btn-primary" data-action="scan-code-lookup">Identify &amp; add to Bulk</button></div><p class="muted micro mt12">Enter 1–999 copies. Each entry is saved as one batch; Undo removes the full batch if all copies are still in Bulk.</p></div><div id="scan-review"`);
 };
 function migrateAltArtNonfoilRecords(){
  const changes=[];
